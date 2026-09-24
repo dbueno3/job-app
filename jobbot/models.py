@@ -27,3 +27,12 @@ class Job(BaseModel):
     @property
     def key(self) -> tuple[str, str]:
         return (self.source, self.source_job_id)
+
+
+class Match(BaseModel):
+    """A job that passed every filter, plus what we learned while filtering it."""
+
+    job: Job
+    score: int
+    min_yoe: float | None  # lowest stated YOE requirement; None if none found
+    keywords: list[str]

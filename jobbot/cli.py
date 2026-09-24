@@ -1,21 +1,45 @@
 import argparse
 import logging
 
-from jobbot.config import load_companies
+from jobbot.config import load_companies, load_filters
+from jobbot.models import Match
+from jobbot.pipeline import select_matches
 from jobbot.sources import fetch_all
 from jobbot.sources.base import make_client
 
 
+def format_yoe(min_yoe: float | None) -> str:
+    if min_yoe is None:
+        return "-"
+    return f"{min_yoe:g}+"
+
+
+def print_matches(matches: list[Match]) -> None:
+    for m in matches:
+        posted = m.job.posted_at.date().isoformat() if m.job.posted_at else "?"
+        print(
+            f"{m.score:>3}  {format_yoe(m.min_yoe):>5}  {posted}  {m.job.company:<8} "
+            f"{m.job.title}  [{m.job.location}]"
+        )
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     companies = load_companies()
+    cfg = load_filters()
     with make_client() as client:
-        result = fetch_all(companies, client)
-    for name, count in result.counts.items():
-        print(f"{name:<12} {count:>4} jobs")
-    for name, reason in result.failures.items():
-        print(f"{name:<12} FAILED  {reason}")
-    print(f"total        {len(result.jobs):>4} jobs")
-    # Filtering, scoring, storage, and the digest land in later phases.
+        fetched = fetch_all(companies, client)
+    for name, reason in fetched.failures.items():
+        print(f"FAILED {name}: {reason}")
+
+    selected = select_matches(fetched.jobs, cfg)
+    dropped = ", ".join(f"{k} {v}" for k, v in selected.dropped.most_common())
+    print(
+        f"fetched {len(fetched.jobs)} | duplicates {selected.duplicates} | "
+        f"dropped: {dropped} | matches {len(selected.matches)}\n"
+    )
+    print("score   yoe  posted      company  title  [location]")
+    print_matches(selected.matches)
+    # Storage and the digest land in later phases.
     return 0
 
 

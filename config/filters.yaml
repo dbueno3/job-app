@@ -1,0 +1,96 @@
+# Title terms are matched case-insensitively on word boundaries,
+# so "sr" won't match "Sre" and "intern" won't match "Internal".
+title_exclude:
+  - senior
+  - sr
+  - staff
+  - principal
+  - lead
+  - manager
+  - director
+  - head of
+  - architect
+  - intern
+  - internship
+
+title_include:
+  - software engineer
+  - software developer
+  - swe
+  - backend
+  - platform
+  - infrastructure
+  - associate
+  - junior
+  - early career
+  - new grad
+  - engineer i
+  - engineer ii
+  - engineer 1
+  - engineer 2
+
+# Keep jobs whose lowest stated years-of-experience minimum is <= this,
+# or that state no requirement at all.
+max_yoe: 3
+
+# Only keep jobs posted within this many days. Jobs with no posting date
+# are kept when keep_undated is true.
+max_age_days: 14
+keep_undated: true
+
+locations:
+  # Any of these (word-boundary match) keeps the job.
+  include:
+    - new york
+    - nyc
+    - ny
+    - brooklyn
+  # A remote job is kept if it mentions one of these...
+  us_markers:
+    - us
+    - u.s.
+    - usa
+    - united states
+    - north america
+  # ...or if it mentions none of these (plain "Remote" is assumed US-eligible).
+  non_us_markers:
+    - canada
+    - toronto
+    - vancouver
+    - mexico
+    - brazil
+    - latam
+    - uk
+    - united kingdom
+    - london
+    - ireland
+    - dublin
+    - europe
+    - emea
+    - germany
+    - poland
+    - romania
+    - spain
+    - netherlands
+    - india
+    - apac
+    - singapore
+    - australia
+    - japan
+
+scoring:
+  title_weight: 3
+  description_weight: 1
+  # name -> regex, matched case-insensitively. `(?-i:...)` forces case-sensitive,
+  # which keeps "Go" (the language) from matching "go-to-market" or "go".
+  keywords:
+    Go: '(?-i:\bGo\b)(?!-to|\s+to\s+market)|\bgolang\b'
+    Python: '\bpython\b'
+    Docker: '\bdocker\b'
+    Linux: '\blinux\b'
+    Kubernetes: '\bkubernetes\b|\bk8s\b'
+    Terraform: '\bterraform\b'
+    PostgreSQL: '\bpostgres(ql)?\b'
+    FastAPI: '\bfastapi\b'
+    payments: '\bpayments?\b'
+    fintech: '\bfintech\b'
