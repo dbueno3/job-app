@@ -1,0 +1,20 @@
+# ats: greenhouse | ashby   (lever coming in a later phase)
+# slug: the board identifier in the ATS API URL
+companies:
+  - name: Stripe
+    ats: greenhouse
+    slug: stripe
+  - name: Brex
+    ats: greenhouse
+    slug: brex
+  - name: Affirm
+    ats: greenhouse
+    slug: affirm
+  - name: Ramp
+    ats: ashby
+    slug: ramp
+  # Mercury's Ashby board (slug "mercury") exists but is empty as of 2026-09;
+  # their live postings are on Greenhouse.
+  - name: Mercury
+    ats: greenhouse
+    slug: mercury

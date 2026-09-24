@@ -1,0 +1,115 @@
+{
+  "jobs": [
+    {
+      "absolute_url": "https://job-boards.greenhouse.io/mercury/jobs/6101151004",
+      "data_compliance": [
+        {
+          "type": "gdpr",
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "demographic_data_consent_applies": false
+        }
+      ],
+      "internal_job_id": 5178589004,
+      "location": {
+        "name": "San Francisco, CA, New York, NY, Portland, OR, or Remote within Canada or United States"
+      },
+      "metadata": [
+        {
+          "id": 12493794004,
+          "name": "Hide on Mercury jobs page?",
+          "value": null,
+          "value_type": "single_select"
+        }
+      ],
+      "id": 6101151004,
+      "updated_at": "2026-08-21T15:55:14-04:00",
+      "requisition_id": "PipelineEngIC3H2026FS",
+      "title": "Senior Full-Stack Engineer",
+      "company_name": "Mercury",
+      "first_published": "2026-07-01T03:00:00-04:00",
+      "language": "en",
+      "application_deadline": null,
+      "content": "&lt;p&gt;Since the dawn of aviation, pilots have faced the constant challenge of air resistance, much like sailors navigating the friction of water. Amidst this relentless struggle, the &lt;em&gt;trim tab&lt;/em&gt; emerges as an ingenious yet understated marvel. Just as the wheel revolutionized transportation by easing movement over land, the &lt;em&gt;trim tab&lt;/em&gt; simplifies flight, allowing for smoother navigation through the skies. It embodies the elegance of simplicity in engineering, transforming the demanding task of controlling an aircraft into a more graceful and manageable endeavor.&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;At Mercury, we are committed to crafting an exceptional banking* experience for startups. Our team is passionately focused on ensuring our product not only meets but anticipates the needs of our customers.&lt;/p&gt;\n&lt;p&gt;Our product engineering group is growing and we’re looking to hire &lt;strong&gt;senior full-stack engineers&lt;/strong&gt;. We’re a team of pragmatic, product-minded engineers motivated by the desire to create lovable products that rescue our customers from frustrating, expensive legacy industry tools.&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;As part of this role, you will:&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Feel a strong sense of product ownership and actively seek responsibility – we often self-organize on small/medium projects, and we want someone excited to help shape and build Mercury’s future.&lt;/li&gt;\n&lt;li&gt;Work in an autonomous environment on a close-knit team, with a “startup within a startup” feel.&lt;/li&gt;\n&lt;li&gt;Partner closely with designers and product leaders to ship lovable experiences. We want to transcend the status quo for banking and fintech software, and many of our customers are startups and appreciate our slick, magical designs.&lt;/li&gt;\n&lt;li&gt;Join a team of experienced product engineers within one of our Mercury product groups such as Banking, Experiences, Expansion, or Risk.&amp;nbsp;&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;The ideal candidate for the role:&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Has 3-7 years of &lt;strong&gt;full-stack&lt;/strong&gt; development experience, with knowledge of or excitement to learn Haskell, React, TypeScript, and Redux.&lt;/li&gt;\n&lt;li&gt;Empathizes with users and can channel their perspective to build lovable products.&lt;/li&gt;\n&lt;li&gt;Can balance tradeoffs and find creative solutions to accomplish goals.&lt;/li&gt;\n&lt;li&gt;Actively incorporates AI tools into their workflow and is excited about leveraging them to amplify their impact — whether that&#39;s accelerating development, improving code quality, or finding creative solutions to hard problems.&lt;/li&gt;\n&lt;li&gt;Communicates and collaborates effectively with peers and cross-functional counterparts.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;If this role interests you, we invite you to explore our public demo at &lt;a href=&quot;https://demo.mercury.com&quot;&gt;demo.mercury.com&lt;/a&gt;.&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;&lt;em&gt;*Mercury is a fintech company, not an FDIC-insured bank. Banking services provided through Choice Financial Group and Column N.A., Members FDIC.&lt;/em&gt;&lt;/p&gt;\n&lt;p&gt;Mercury values diversity &amp;amp; belonging and is proud to be an Equal Employment Opportunity employer. All individuals seeking employment at Mercury are considered without regard to race, color, religion, national origin, age, sex, marital status, ancestry, physical or mental disability, veteran status, gender identity, sexual orientation, or any other legally protected characteristic. We are committed to providing reasonable accommodations throughout the recruitment process for applicants with disabilities or special needs. If you need assistance, or an accommodation, please let your recruiter know once you are contacted about a role.&lt;/p&gt;\n&lt;p&gt;&lt;span data-sheets-root=&quot;1&quot;&gt;#LI-DNI&lt;/span&gt;&lt;/p&gt;&lt;div class=&quot;content-pay-transparency&quot;&gt;&lt;div class=&quot;pay-input&quot;&gt;&lt;div class=&quot;description&quot;&gt;&lt;p&gt;&lt;strong&gt;Total Rewards&lt;/strong&gt;&lt;br&gt;The total rewards package at Mercury includes base salary, equity (stock options/RSUs), and benefits.&lt;/p&gt;\n&lt;p&gt;Our salary and equity ranges are highly competitive within the SaaS and fintech industry and are updated regularly using the most reliable compensation survey data for our industry. New hire offers are made based on a candidate’s experience, expertise, geographic location, and internal pay equity relative to peers.&lt;/p&gt;\n&lt;p&gt;Our target new hire base salary ranges for this role are the following&lt;strong&gt;:&lt;/strong&gt;&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;title&quot;&gt;US employees (any location):&lt;/div&gt;&lt;div class=&quot;pay-range&quot;&gt;&lt;span&gt;$166,600&lt;/span&gt;&lt;span class=&quot;divider&quot;&gt;&amp;mdash;&lt;/span&gt;&lt;span&gt;$208,300 USD&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;pay-input&quot;&gt;&lt;div class=&quot;title&quot;&gt;Canadian employees (any location):&lt;/div&gt;&lt;div class=&quot;pay-range&quot;&gt;&lt;span&gt;$157,400&lt;/span&gt;&lt;span class=&quot;divider&quot;&gt;&amp;mdash;&lt;/span&gt;&lt;span&gt;$196,800 CAD&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;",
+      "departments": [
+        {
+          "id": 4034562004,
+          "name": "Engineering",
+          "child_ids": [],
+          "parent_id": 4050836004
+        }
+      ],
+      "offices": [
+        {
+          "id": 4021462004,
+          "name": "Any Office or Remote",
+          "location": null,
+          "child_ids": [],
+          "parent_id": null
+        }
+      ],
+      "ai_disclaimer": null,
+      "include_ai_disclaimer": null,
+      "ai_opt_out_request_url": null
+    },
+    {
+      "absolute_url": "https://job-boards.greenhouse.io/mercury/jobs/6150432004",
+      "data_compliance": [
+        {
+          "type": "gdpr",
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "demographic_data_consent_applies": false
+        }
+      ],
+      "internal_job_id": 5203463004,
+      "location": {
+        "name": "San Francisco, CA, New York, NY, Portland, OR, or Remote within Canada or United States"
+      },
+      "metadata": [
+        {
+          "id": 12493794004,
+          "name": "Hide on Mercury jobs page?",
+          "value": null,
+          "value_type": "single_select"
+        }
+      ],
+      "id": 6150432004,
+      "updated_at": "2026-08-21T14:32:47-04:00",
+      "requisition_id": "JR00721",
+      "title": "Software Engineer - Infrastructure",
+      "company_name": "Mercury",
+      "first_published": "2026-08-21T14:32:47-04:00",
+      "language": "en",
+      "application_deadline": null,
+      "content": "&lt;p&gt;The backbone of any technology org is its infrastructure, come join the team giving that skeleton superhuman abilities. The Infrastructure team at Mercury is an enablement lever for the rest of the business, building scaleable, secure and maintainable foundations for the rest of the org to build on top of.&lt;/p&gt;\n&lt;p&gt;Infrastructure is currently building out more platform features to make it easier for agents and humans to deploy code. This means security by default, observable by default and easy to use and operate. We do all this while not compromising on speed, and ship to prod all day, every day, which is a testament to the strong foundations this team has built.&lt;br&gt;&lt;br&gt;We are looking for an engineer to join our team to help build out the “platform” even further! We maintain everything from networking to container orchestration, and work with product teams to enable any AWS needs they have. We want someone who is passionate about building maintainable systems, is obsessed with quality and making sure the sharp edges are filed off, and is extremely helpful when diving into problems with our product counterparts.&lt;/p&gt;\n&lt;p&gt;This is a role for someone who likes going deep, shipping often, and leaving systems better than they found them. Someone who cares about quality without turning quality into bureaucracy. Someone who is just as happy debugging a strange Linux problem as they are helping a product engineer understand why their service behaves differently in production.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Some of the technology you’ll work with&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;Our infrastructure is built primarily on AWS, including systems like EC2, RDS, OpenSearch, ECS, and EKS. We like to use the right tool for the job and bias towards cloud native open source tooling&lt;/p&gt;\n&lt;p&gt;We use Terraform extensively to manage infrastructure as code, GitHub and GitHub Actions for version control and delivery, and Prometheus, Grafana, OpenSearch, and OpenTelemetry to understand what is happening in production.&lt;/p&gt;\n&lt;p&gt;We’re also increasingly building &lt;strong&gt;agentic infrastructure&lt;/strong&gt;: systems that let AI agents safely interact with our infrastructure, and frameworks that give both agents and the humans operating them the right guardrails.&lt;/p&gt;\n&lt;p&gt;You do not need to arrive knowing every tool we use. We care more about strong fundamentals, curiosity, and the ability to go deep.&lt;/p&gt;\n&lt;p&gt;As we gear up for the next stages of Mercury&#39;s growth, you will:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Build our “Infrastructure Platform” to support the growing needs of the Engineering Organization&lt;/li&gt;\n&lt;li&gt;Focus on building a platform that is AI friendly while still usable for engineers. We want our users to be humans &lt;em&gt;and&lt;/em&gt; Agents&lt;/li&gt;\n&lt;li&gt;Deliver key infrastructure projects, break-down complex initiatives, and define our infrastructure strategy through detailed RFCs and technical specifications&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;Must haves:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;You have 2+ years of experience with AWS&lt;/li&gt;\n&lt;li&gt;You have a keen interest in cloud native open source technologies, and feel comfortable contributing code upstream to these technologies&lt;/li&gt;\n&lt;li&gt;Strong knowledge of low-level operating system foundations (linux, file systems, containers, etc)&lt;/li&gt;\n&lt;li&gt;You have demonstrated ability in technical writing, with at least 2 years of experience creating detailed technical documentation, RFCs, and tech specs that clearly communicate complex ideas&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;The ideal candidate should:&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Be used to operating in regulated environments such as HITRUST or SOC2, ensuring compliance and security&lt;/li&gt;\n&lt;li&gt;Have 2+ years of experience working in massive terraform environments, with many engineers contributing code in a scalable way&lt;/li&gt;\n&lt;li&gt;Have 2+ years of experience writing code. We are building an Infrastructure Platform from scratch and there is plenty of code to write to support that&lt;/li&gt;\n&lt;li&gt;Be extremely willing to learn and dive into hard problems! We have many to solve!&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;The Infrastructure team sits in an interesting place at Mercury: close enough to production that the details matter, and broad enough that a good abstraction can make hundreds of engineers faster.&lt;/p&gt;\n&lt;p&gt;There is a lot left to build.&lt;/p&gt;\n&lt;p&gt;If you like infrastructure that is secure by default, observable by default, pleasant to use, and designed for people who want to ship, we’d love to hear from you.&lt;/p&gt;\n&lt;p&gt;If this role interests you, we invite you to explore our public demo at &lt;a href=&quot;https://demo.mercury.com/&quot;&gt;demo.mercury.com&lt;/a&gt;.&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;&lt;em&gt;*Mercury is a fintech company, not an FDIC-insured bank. Banking services provided through Choice Financial Group and Column N.A., Members FDIC.&lt;/em&gt;&lt;/p&gt;\n&lt;p&gt;Mercury values diversity &amp;amp; belonging and is proud to be an Equal Employment Opportunity employer. All individuals seeking employment at Mercury are considered without regard to race, color, religion, national origin, age, sex, marital status, ancestry, physical or mental disability, veteran status, gender identity, sexual orientation, or any other legally protected characteristic. We are committed to providing reasonable accommodations throughout the recruitment process for applicants with disabilities or special needs. If you need assistance, or an accommodation, please let your recruiter know once you are contacted about a role.&lt;/p&gt;\n&lt;p&gt;#LI-ME1&lt;/p&gt;&lt;div class=&quot;content-pay-transparency&quot;&gt;&lt;div class=&quot;pay-input&quot;&gt;&lt;div class=&quot;description&quot;&gt;&lt;p&gt;&lt;strong&gt;Total Rewards&lt;/strong&gt;&lt;br&gt;The total rewards package at Mercury includes base salary, equity (stock options/RSUs), and benefits.&lt;/p&gt;\n&lt;p&gt;Our salary and equity ranges are highly competitive within the SaaS and fintech industry and are updated regularly using the most reliable compensation survey data for our industry. New hire offers are made based on a candidate’s experience, expertise, geographic location, and internal pay equity relative to peers.&lt;/p&gt;\n&lt;p&gt;Our target new hire base salary ranges for this role are the following&lt;strong&gt;:&lt;/strong&gt;&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;title&quot;&gt;US employees (any location):&lt;/div&gt;&lt;div class=&quot;pay-range&quot;&gt;&lt;span&gt;$122,400&lt;/span&gt;&lt;span class=&quot;divider&quot;&gt;&amp;mdash;&lt;/span&gt;&lt;span&gt;$158,400 USD&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;pay-input&quot;&gt;&lt;div class=&quot;title&quot;&gt;Canadian employees (any location):&lt;/div&gt;&lt;div class=&quot;pay-range&quot;&gt;&lt;span&gt;$115,700&lt;/span&gt;&lt;span class=&quot;divider&quot;&gt;&amp;mdash;&lt;/span&gt;&lt;span&gt;$149,700 CAD&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;",
+      "departments": [
+        {
+          "id": 4034562004,
+          "name": "Engineering",
+          "child_ids": [],
+          "parent_id": 4050836004
+        }
+      ],
+      "offices": [
+        {
+          "id": 4021462004,
+          "name": "Any Office or Remote",
+          "location": null,
+          "child_ids": [],
+          "parent_id": null
+        }
+      ],
+      "ai_disclaimer": null,
+      "include_ai_disclaimer": null,
+      "ai_opt_out_request_url": null
+    }
+  ],
+  "meta": {
+    "total": 2
+  }
+}
