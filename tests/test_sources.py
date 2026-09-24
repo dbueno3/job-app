@@ -187,5 +187,7 @@ def test_fetch_all_skips_failing_boards(monkeypatch):
 
 def test_seed_companies_config_is_valid():
     companies = load_companies()
-    assert {c.name for c in companies} == {"Stripe", "Brex", "Affirm", "Ramp", "Mercury"}
+    assert {"Stripe", "Brex", "Affirm", "Ramp", "Mercury"} <= {c.name for c in companies}
     assert all(c.ats in SOURCES for c in companies)
+    boards = [(c.ats, c.slug) for c in companies]
+    assert len(boards) == len(set(boards)), "duplicate board in companies.yaml"

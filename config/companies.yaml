@@ -18,3 +18,121 @@ companies:
   - name: Mercury
     ats: greenhouse
     slug: mercury
+
+  # --- added 2026-09-24: NYC-heavy tech/fintech, slugs verified live ---
+  # Greenhouse
+  - name: Datadog
+    ats: greenhouse
+    slug: datadog
+  - name: MongoDB
+    ats: greenhouse
+    slug: mongodb
+  - name: Betterment
+    ats: greenhouse
+    slug: betterment
+  - name: Squarespace
+    ats: greenhouse
+    slug: squarespace
+  - name: Justworks
+    ats: greenhouse
+    slug: justworks
+  - name: Oscar Health
+    ats: greenhouse
+    slug: oscar
+  - name: Robinhood
+    ats: greenhouse
+    slug: robinhood
+  - name: Chime
+    ats: greenhouse
+    slug: chime
+  - name: Toast
+    ats: greenhouse
+    slug: toast
+  - name: Carta
+    ats: greenhouse
+    slug: carta
+  - name: Flatiron Health
+    ats: greenhouse
+    slug: flatironhealth
+  - name: Peloton
+    ats: greenhouse
+    slug: peloton
+  - name: SoFi
+    ats: greenhouse
+    slug: sofi
+  - name: Discord
+    ats: greenhouse
+    slug: discord
+  - name: Figma
+    ats: greenhouse
+    slug: figma
+  - name: Airtable
+    ats: greenhouse
+    slug: airtable
+  - name: Asana
+    ats: greenhouse
+    slug: asana
+  - name: Cloudflare
+    ats: greenhouse
+    slug: cloudflare
+  - name: Lyft
+    ats: greenhouse
+    slug: lyft
+  - name: Gemini
+    ats: greenhouse
+    slug: gemini
+  - name: Coinbase
+    ats: greenhouse
+    slug: coinbase
+  - name: Yext
+    ats: greenhouse
+    slug: yext
+  - name: Zocdoc
+    ats: greenhouse
+    slug: zocdoc
+  - name: Taskrabbit
+    ats: greenhouse
+    slug: taskrabbit
+  - name: SeatGeek
+    ats: greenhouse
+    slug: seatgeek
+  - name: Jane Street
+    ats: greenhouse
+    slug: janestreet
+  - name: IMC
+    ats: greenhouse
+    slug: imc
+  # Ashby
+  - name: Notion
+    ats: ashby
+    slug: notion
+  - name: Linear
+    ats: ashby
+    slug: linear
+  - name: Vanta
+    ats: ashby
+    slug: vanta
+  - name: Modern Treasury
+    ats: ashby
+    slug: moderntreasury
+  - name: Column
+    ats: ashby
+    slug: column
+  - name: Plaid
+    ats: ashby
+    slug: plaid
+  - name: Persona
+    ats: ashby
+    slug: persona
+  - name: Sierra
+    ats: ashby
+    slug: sierra
+  - name: Cursor
+    ats: ashby
+    slug: cursor
+  - name: Modal
+    ats: ashby
+    slug: modal
+  - name: Hex
+    ats: ashby
+    slug: hex
