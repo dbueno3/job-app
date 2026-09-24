@@ -1,0 +1,50 @@
+name: jobbot
+
+on:
+  schedule:
+    - cron: "0 */6 * * *" # every 6 hours (UTC); GitHub may start scheduled runs late
+  workflow_dispatch:
+
+permissions:
+  contents: write # to commit data/jobs.db back
+
+# Never run two at once: both would email the same jobs and race on the DB push.
+concurrency:
+  group: jobbot
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Test
+        run: uv run pytest -q
+
+      - name: Run jobbot
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
+          DIGEST_TO: ${{ secrets.DIGEST_TO }}
+        run: uv run jobbot run
+
+      - name: Commit updated database
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/jobs.db
+          if git diff --cached --quiet; then
+            echo "jobs.db unchanged"
+          else
+            git commit -m "Update jobs.db [skip ci]"
+            git push
+          fi
