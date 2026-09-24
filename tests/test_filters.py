@@ -140,6 +140,7 @@ def test_yoe_ok(min_yoe, keep):
 
 EXCLUDE = compile_terms(CFG.title_exclude)
 INCLUDE = compile_terms(CFG.title_include)
+REQUIRE = compile_terms(CFG.title_require)
 
 
 @pytest.mark.parametrize(
@@ -158,10 +159,14 @@ INCLUDE = compile_terms(CFG.title_include)
         "Software Engineer 2",
         "SWE, Growth",
         "Software Engineer, Internal Systems",  # "internal" is not "intern"
+        "Software Engineer, Security, Stablecoin",  # not "security engineer"
+        "Machine Learning Engineer II",
+        "Full Stack Engineer, Web Presence and Platform",
+        "Backend/API Engineer, Money as a Service",
     ],
 )
 def test_title_kept(title):
-    assert title_ok(title, EXCLUDE, INCLUDE)
+    assert title_ok(title, EXCLUDE, INCLUDE, REQUIRE)
 
 
 @pytest.mark.parametrize(
@@ -183,10 +188,23 @@ def test_title_kept(title):
         "Tech Leads, Backend",
         "Account Executive",  # no include term
         "Security Engineer",  # engineer, but none of the include terms
+        # include term but no engineering word
+        "Customer Experience Associate",
+        "Operations Associate, New Grad (Mexico)",
+        "Account Executive, Enterprise Platforms",
+        "Data Scientist, Core Infrastructure",
+        "Strategy & Operations, Infrastructure",
+        # engineering word but not a software engineering role
+        "Analytics Engineer II",
+        "Product Security Engineer II",
+        "Client Platform Security Engineer",
+        "Solutions Engineer, Platform",
+        "Sales Engineer, Infrastructure",
+        "Systems Engineer, Corporate Infrastructure",
     ],
 )
 def test_title_dropped(title):
-    assert not title_ok(title, EXCLUDE, INCLUDE)
+    assert not title_ok(title, EXCLUDE, INCLUDE, REQUIRE)
 
 
 def test_engineer_i_does_not_match_inside_engineer_iii():

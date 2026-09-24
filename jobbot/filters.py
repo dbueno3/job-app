@@ -19,9 +19,12 @@ def compile_terms(terms: list[str]) -> re.Pattern:
 # --- title --------------------------------------------------------------------
 
 
-def title_ok(title: str, exclude: re.Pattern, include: re.Pattern) -> bool:
-    """Exclusions win: 'Senior Software Engineer' is dropped even though it includes SWE."""
-    return not exclude.search(title) and bool(include.search(title))
+def title_ok(title: str, exclude: re.Pattern, include: re.Pattern, require: re.Pattern) -> bool:
+    """No exclude term, at least one include term, and at least one require term.
+
+    Exclusions win: 'Senior Software Engineer' is dropped even though it includes SWE.
+    """
+    return not exclude.search(title) and bool(include.search(title)) and bool(require.search(title))
 
 
 # --- location -----------------------------------------------------------------
@@ -181,13 +184,14 @@ class JobFilter:
         self.cfg = cfg
         self.exclude = compile_terms(cfg.title_exclude)
         self.include = compile_terms(cfg.title_include)
+        self.require = compile_terms(cfg.title_require)
         self.location = LocationMatcher(cfg.locations)
 
     def evaluate(self, job: Job, now: datetime) -> tuple[str | None, float | None]:
         """(drop_reason or None, parsed min YOE). Cheap checks run before the regex-heavy one."""
         if not is_recent(job, now, self.cfg.max_age_days, self.cfg.keep_undated):
             return "too old", None
-        if not title_ok(job.title, self.exclude, self.include):
+        if not title_ok(job.title, self.exclude, self.include, self.require):
             return "title", None
         if not self.location.ok(job):
             return "location", None

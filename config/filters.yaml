@@ -12,6 +12,22 @@ title_exclude:
   - architect
   - intern
   - internship
+  # "engineer" roles that aren't software engineering
+  - analytics engineer
+  - security engineer
+  - solutions engineer
+  - sales engineer
+  - support engineer
+  - customer engineer
+  - field engineer
+  - implementation engineer
+  - integration engineer
+  - systems engineer
+  - business systems
+  - network engineer
+  - hardware engineer
+  - electrical engineer
+  - mechanical engineer
 
 title_include:
   - software engineer
@@ -28,6 +44,16 @@ title_include:
   - engineer ii
   - engineer 1
   - engineer 2
+
+# The title must ALSO contain one of these, so broad include terms like
+# "associate" or "platform" can't let through "Operations Associate" or
+# "Account Executive, Platforms".
+title_require:
+  - engineer
+  - developer
+  - swe
+  - sde
+  - programmer
 
 # Keep jobs whose lowest stated years-of-experience minimum is <= this,
 # or that state no requirement at all.

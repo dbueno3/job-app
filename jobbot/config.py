@@ -27,6 +27,7 @@ class ScoringConfig(BaseModel):
 class FilterConfig(BaseModel):
     title_exclude: list[str]
     title_include: list[str]
+    title_require: list[str]
     max_yoe: float = 3
     max_age_days: int = 14
     keep_undated: bool = True
