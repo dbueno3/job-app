@@ -1,5 +1,6 @@
 name: jobbot
 
+# Fetch, filter, and email new SWE matches; commit data/jobs.db back to the repo.
 on:
   schedule:
     - cron: "0 */6 * * *" # every 6 hours (UTC); GitHub may start scheduled runs late
