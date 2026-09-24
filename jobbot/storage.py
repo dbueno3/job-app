@@ -80,7 +80,14 @@ class Storage:
         self.close()
 
     def close(self) -> None:
+        """Close without committing: anything not explicitly committed is discarded."""
         self.conn.close()
+
+    def commit(self) -> None:
+        self.conn.commit()
+
+    def rollback(self) -> None:
+        self.conn.rollback()
 
     def _seen(self, job: Job) -> bool:
         """Already stored under the same ID, or as a repost with the same fingerprint."""
@@ -93,42 +100,43 @@ class Storage:
     def add_new(self, matches: list[Match], now: datetime | None = None) -> list[StoredJob]:
         """Insert matches not seen before; return only the newly inserted ones (for the digest).
 
+        Does NOT commit: the caller commits once the digest is sent (or rolls back on
+        failure / dry run), so a failed email never marks jobs as seen.
         Order of the input is preserved, so sorted matches come back sorted.
         """
         now = now or utcnow()
         inserted_ids = []
-        with self.conn:  # one transaction for the whole batch
-            for m in matches:
-                if self._seen(m.job):
-                    continue
-                j = m.job
-                cur = self.conn.execute(
-                    """
-                    INSERT INTO jobs (source, source_job_id, company, title, location,
-                        is_remote, url, description_text, posted_at, first_seen_at,
-                        score, min_yoe, keywords, fingerprint, status, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        j.source,
-                        j.source_job_id,
-                        j.company,
-                        j.title,
-                        j.location,
-                        int(j.is_remote),
-                        j.url,
-                        j.description_text,
-                        _iso(j.posted_at),
-                        _iso(j.first_seen_at),
-                        m.score,
-                        m.min_yoe,
-                        ",".join(m.keywords),
-                        _fingerprint_key(j),
-                        Status.NEW,
-                        _iso(now),
-                    ),
-                )
-                inserted_ids.append(cur.lastrowid)
+        for m in matches:
+            if self._seen(m.job):
+                continue
+            j = m.job
+            cur = self.conn.execute(
+                """
+                INSERT INTO jobs (source, source_job_id, company, title, location,
+                    is_remote, url, description_text, posted_at, first_seen_at,
+                    score, min_yoe, keywords, fingerprint, status, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    j.source,
+                    j.source_job_id,
+                    j.company,
+                    j.title,
+                    j.location,
+                    int(j.is_remote),
+                    j.url,
+                    j.description_text,
+                    _iso(j.posted_at),
+                    _iso(j.first_seen_at),
+                    m.score,
+                    m.min_yoe,
+                    ",".join(m.keywords),
+                    _fingerprint_key(j),
+                    Status.NEW,
+                    _iso(now),
+                ),
+            )
+            inserted_ids.append(cur.lastrowid)
         return [self.get(i) for i in inserted_ids]
 
     def get(self, job_id: int) -> StoredJob | None:

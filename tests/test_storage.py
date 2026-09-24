@@ -127,8 +127,17 @@ def test_persists_to_disk(tmp_path):
     path = tmp_path / "sub" / "jobs.db"
     with Storage(path) as s:
         s.add_new([match()])
+        s.commit()
     with Storage(path) as s:
         assert len(s.list_jobs()) == 1
+
+
+def test_uncommitted_adds_are_discarded(tmp_path):
+    path = tmp_path / "jobs.db"
+    with Storage(path) as s:
+        s.add_new([match()])  # no commit, e.g. the email failed
+    with Storage(path) as s:
+        assert s.list_jobs() == []
 
 
 # --- CLI ----------------------------------------------------------------------
@@ -138,6 +147,7 @@ def test_cli_status_and_list(tmp_path, capsys):
     db = tmp_path / "jobs.db"
     with Storage(db) as s:
         s.add_new([match(title="Software Engineer II", company="Affirm")])
+        s.commit()
 
     assert main(["--db", str(db), "status", "1", "applied", "--note", "referral"]) == 0
     assert main(["--db", str(db), "list", "--status", "applied"]) == 0
