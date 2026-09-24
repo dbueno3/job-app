@@ -91,13 +91,11 @@ def test_pipeline_on_fixtures():
         ("Mercury", "Software Engineer - Infrastructure"),
         ("Ramp", "Software Engineer, Production Engineering"),
         ("Ramp", "Software Engineer, Data Platform"),
-        ("Stripe", "Software Engineer, Early Career — Immediate Start"),
-        ("Stripe", "Software Engineer, New Grad"),
     }
-    # Senior Backend, Senior Full-Stack, Ramp intern -> title.
+    # Senior Backend, Senior Full-Stack, Ramp intern, Stripe New Grad + Early Career -> title.
     # Backend Engineer, Payments (Toronto, Canada Remote) -> location.
     # Billing Platform (5+ years) -> yoe.
-    assert result.dropped == {"title": 3, "location": 1, "yoe": 1}
+    assert result.dropped == {"title": 5, "location": 1, "yoe": 1}
     assert result.matches == sort_matches(result.matches)
     by_title = {m.job.title: m for m in result.matches}
     assert by_title["Software Engineer - Infrastructure"].min_yoe == 2

@@ -4,6 +4,7 @@ import pytest
 
 from jobbot.config import load_filters
 from jobbot.filters import (
+    JobFilter,
     LocationMatcher,
     compile_terms,
     dedupe,
@@ -130,10 +131,22 @@ def test_parse_min_yoe_sentence_boundary_scopes_context():
 
 @pytest.mark.parametrize(
     "min_yoe, keep",
-    [(None, True), (0.5, True), (2, True), (3, True), (3.5, False), (5, False)],
+    [(None, True), (0, False), (0.5, False), (1, True), (2, True), (3, True), (3.5, False)],
 )
 def test_yoe_ok(min_yoe, keep):
-    assert yoe_ok(min_yoe, max_yoe=3) is keep
+    assert yoe_ok(min_yoe, max_yoe=3, floor=1) is keep
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("0-2 years of experience", 0),
+        ("0+ years of professional experience", 0),
+        ("0–3 years of software engineering experience, or 1+ years in a related role", 0),
+    ],
+)
+def test_parse_min_yoe_zero(text, expected):
+    assert parse_min_yoe(text) == expected
 
 
 # --- title --------------------------------------------------------------------
@@ -150,8 +163,6 @@ REQUIRE = compile_terms(CFG.title_require)
         "Software Engineer II",
         "Software Engineer, Backend",
         "Backend Engineer, Payments",
-        "Software Engineer, New Grad",
-        "Software Engineer, Early Career — Immediate Start",
         "Associate Software Developer",
         "Platform Engineer",
         "Infrastructure Engineer",
@@ -183,6 +194,12 @@ def test_title_kept(title):
         "Head of Platform",
         "Solutions Architect, Platform",
         "Software Engineer, Intern",
+        "Software Engineer, New Grad",
+        "Software Engineer, New Grad 2027",
+        "Software Engineer, Early Career — Immediate Start",
+        "Graduate Software Engineer",
+        "University Grad Software Engineer",
+        "Software Engineering Apprenticeship",
         "Software Engineering Internship, Backend",
         "Large User Sales Managers, Platform Partnerships",  # plural exclude term
         "Tech Leads, Backend",
@@ -317,3 +334,63 @@ def test_dedupe_prefers_dated_over_undated():
     dated = make_job(source_job_id="2")
     assert dedupe([undated, dated])[0].source_job_id == "2"
     assert dedupe([dated, undated])[0].source_job_id == "2"
+
+
+# --- new-grad descriptions ------------------------------------------------------
+
+JOB_FILTER = JobFilter(CFG)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # real phrasing from live postings
+        "Bachelor's degree in CS or a directly related field, obtained by summer 2027",
+        "Current university student graduating between September 2026 – July 2027",
+        "Recent graduates (including Summer 2026) or professionals with up to 18 months",
+        "New grad candidates should have no more than 18 months of professional experience",
+        "You are a college student graduating in the spring/summer of 2027",
+        "with an expected graduation date of Winter 2027 or Spring 2028",
+        "For this role, you need to graduate in December 2026",
+        "Planning to graduate in 2028, all majors are welcome!",
+        "Open to the Class of 2027",
+    ],
+)
+def test_new_grad_description_detected(text):
+    assert JOB_FILTER.is_new_grad(make_job(description_text=text))
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # real phrasing from regular (non-new-grad) postings
+        "You'll also mentor early-career engineers to raise our collective quality bar",
+        "Note: if you are an intern or new grad applicant, please do not apply using this link",
+        "Manage a team of software engineers ranging from new grads to senior engineers",
+        "Undergraduate or graduate degree in Computer Science, Engineering, or a related field",
+        "5+ years professional working experience as a software engineer post graduation",
+        "eliminate the class of problem",
+        "3+ years of experience; we've grown 10x since 2021",
+    ],
+)
+def test_new_grad_description_not_triggered(text):
+    assert not JOB_FILTER.is_new_grad(make_job(description_text=text))
+
+
+def test_evaluate_drops_new_grad_with_normal_title():
+    job = make_job(
+        title="Software Engineer 2",
+        description_text="Recent graduates (including Summer 2026) or professionals with up to "
+        "18 months of experience.",
+    )
+    assert JOB_FILTER.evaluate(job, NOW)[0] == "new grad"
+
+
+def test_evaluate_drops_below_min_yoe():
+    job = make_job(description_text="0-2 years of software engineering experience")
+    assert JOB_FILTER.evaluate(job, NOW) == ("yoe", 0)
+
+
+def test_evaluate_keeps_one_year():
+    job = make_job(description_text="1+ years of software engineering experience")
+    assert JOB_FILTER.evaluate(job, NOW) == (None, 1)

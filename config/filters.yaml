@@ -12,6 +12,17 @@ title_exclude:
   - architect
   - intern
   - internship
+  # roles aimed at students / new grads (graduation-year hiring)
+  - new grad
+  - new graduate
+  - early career
+  - university grad
+  - university graduate
+  - recent grad
+  - recent graduate
+  - graduate          # "Graduate Software Engineer" = grad program
+  - apprentice
+  - apprenticeship
   # "engineer" roles that aren't software engineering
   - analytics engineer
   - security engineer
@@ -38,8 +49,6 @@ title_include:
   - infrastructure
   - associate
   - junior
-  - early career
-  - new grad
   - engineer i
   - engineer ii
   - engineer 1
@@ -55,9 +64,20 @@ title_require:
   - sde
   - programmer
 
-# Keep jobs whose lowest stated years-of-experience minimum is <= this,
-# or that state no requirement at all.
+# Keep jobs whose lowest stated years-of-experience minimum is between these,
+# or that state no requirement at all. min_yoe: 1 drops "0-2 years" roles.
+min_yoe: 1
 max_yoe: 3
+
+# Descriptions matching any of these are new-grad roles and get dropped, even
+# with a normal title (e.g. "Software Engineer 2" hiring "Summer 2026 graduates").
+# Each needs a year or a months cap, so "mentor early-career engineers" or
+# "new grads, please don't apply here" don't match. Case-insensitive regex.
+new_grad_patterns:
+  - '\bgraduat\w*\b[^.\n]{0,40}?\b20[2-3]\d\b'           # graduating between Sep 2026 - Jul 2027
+  - '\b(?:obtained|completed|earned|conferred)\s+(?:by|in|before|between)\b[^.\n]{0,20}?\b20[2-3]\d\b'  # degree obtained by summer 2027
+  - '\bclass\s+of\s+20[2-3]\d\b'
+  - '\b(?:no more than|up to|less than|fewer than)\s+\d{1,2}\s+months\b'  # up to 18 months of experience
 
 # Only keep jobs posted within this many days. Jobs with no posting date
 # are kept when keep_undated is true.

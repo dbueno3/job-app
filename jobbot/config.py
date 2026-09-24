@@ -28,7 +28,9 @@ class FilterConfig(BaseModel):
     title_exclude: list[str]
     title_include: list[str]
     title_require: list[str]
+    min_yoe: float = 0
     max_yoe: float = 3
+    new_grad_patterns: list[str] = []
     max_age_days: int = 14
     keep_undated: bool = True
     locations: LocationConfig

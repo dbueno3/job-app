@@ -130,7 +130,7 @@ def parse_min_yoe(text: str) -> float | None:
     found: list[float] = []
     for m in YOE_PATTERN.finditer(text):
         value = _to_number(m.group("lo") or m.group("n"))
-        if value <= 0 or value > MAX_PLAUSIBLE_YOE:
+        if value > MAX_PLAUSIBLE_YOE:
             continue
         before, sentence = _sentence_around(text, m.start(), m.end())
         if _NOT_REQUIREMENT_BEFORE.search(before):
@@ -141,8 +141,9 @@ def parse_min_yoe(text: str) -> float | None:
     return min(found) if found else None
 
 
-def yoe_ok(min_yoe: float | None, max_yoe: float) -> bool:
-    return min_yoe is None or min_yoe <= max_yoe
+def yoe_ok(min_yoe: float | None, max_yoe: float, floor: float = 0) -> bool:
+    """Unstated is kept; otherwise the lowest stated minimum must be in [floor, max_yoe]."""
+    return min_yoe is None or floor <= min_yoe <= max_yoe
 
 
 # --- dedupe -------------------------------------------------------------------
@@ -186,6 +187,10 @@ class JobFilter:
         self.include = compile_terms(cfg.title_include)
         self.require = compile_terms(cfg.title_require)
         self.location = LocationMatcher(cfg.locations)
+        self.new_grad = [re.compile(p, re.IGNORECASE) for p in cfg.new_grad_patterns]
+
+    def is_new_grad(self, job: Job) -> bool:
+        return any(p.search(job.description_text) for p in self.new_grad)
 
     def evaluate(self, job: Job, now: datetime) -> tuple[str | None, float | None]:
         """(drop_reason or None, parsed min YOE). Cheap checks run before the regex-heavy one."""
@@ -195,7 +200,9 @@ class JobFilter:
             return "title", None
         if not self.location.ok(job):
             return "location", None
+        if self.is_new_grad(job):
+            return "new grad", None
         min_yoe = parse_min_yoe(job.description_text)
-        if not yoe_ok(min_yoe, self.cfg.max_yoe):
+        if not yoe_ok(min_yoe, self.cfg.max_yoe, self.cfg.min_yoe):
             return "yoe", min_yoe
         return None, min_yoe
