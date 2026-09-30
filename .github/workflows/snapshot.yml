@@ -1,0 +1,33 @@
+name: snapshot
+
+# Weekly copy of jobs.db from the data branch, kept 90 days. The data branch is a
+# single force-pushed commit with no history, so these artifacts are the undo.
+on:
+  schedule:
+    - cron: "0 12 * * 0" # Sundays 12:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read jobs.db from the data branch
+        id: db
+        run: |
+          git fetch --no-tags --depth=1 origin +refs/heads/data:refs/remotes/origin/data
+          git show origin/data:jobs.db > jobs.db
+          echo "stamp=$(date -u +%Y%m%dT%H%M%SZ)" >> "$GITHUB_OUTPUT"
+          ls -l jobs.db
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: jobs-db-weekly-${{ steps.db.outputs.stamp }}
+          path: jobs.db
+          retention-days: 90
+          if-no-files-found: error

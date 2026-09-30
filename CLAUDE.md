@@ -44,11 +44,13 @@ jobbot/
     storage.py              # SQLite: dedupe, repost detection, status tracking
     datasync.py             # jobs.db on the `data` branch: fetch, replay, push with lease
     digest.py               # build + send HTML email
+    dispatch.py             # what to email when: hit-list alerts, 7am/9pm ET digest windows
     links.py                # generated LinkedIn search URLs (never fetched)
     cli.py                  # run, digest, status, list, stats, sync, verify-companies
   tests/fixtures/
   .github/workflows/run.yml
   .github/workflows/verify.yml
+  .github/workflows/snapshot.yml
 ```
 
 ## Config: companies.yaml
@@ -148,6 +150,9 @@ rejected | skipped), `notes`, `digested_at` (nullable), `updated_at`.
   and `jobbot sync` push with `--force-with-lease`; on rejection they fetch the latest
   DB, re-apply their own pending changes, and retry, so neither side ever overwrites
   the other. Local status changes are journaled until a sync succeeds.
+- Snapshots (the data branch has no history): weekly `snapshot.yml` uploads jobs.db
+  as an Actions artifact (90-day retention). Before any schema migration, Storage
+  copies the DB to `data/backups/`, and run.yml uploads that folder the same way.
 - Repost detection: a job is a likely repost if (company, normalized title, location)
   matches an existing row with a different `source_job_id`. Set `is_repost` and
   `repost_of`. If the earlier row's status is applied, reached_out, interviewing,

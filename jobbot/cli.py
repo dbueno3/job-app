@@ -4,16 +4,14 @@ import shutil
 import tempfile
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 
 from jobbot.config import ConfigError, load_companies, load_filters, load_profile
 from jobbot.datasync import REPO_ROOT, DataBranch, GitError, Journal, PushConflict, replay
-from jobbot.digest import DigestConfigError, SmtpConfig, build_digest, send_digest
-from jobbot.models import utcnow
-from jobbot.pipeline import DetailFetcher, Evaluator, IngestResult, RefilterResult, ingest, refilter
-from jobbot.sources import Listing, fetch_all
+from jobbot.digest import Digest, DigestConfigError, SmtpConfig, send_digest
+from jobbot.dispatch import RunState, run_once
+from jobbot.pipeline import DetailFetcher, Evaluator, IngestResult
+from jobbot.sources import fetch_all
 from jobbot.sources.base import make_client
 from jobbot.storage import DEFAULT_DB, Status, Storage, StoredJob
 
@@ -46,76 +44,80 @@ def print_jobs(jobs: list[StoredJob], show_url: bool = False) -> None:
 # --- run ------------------------------------------------------------------------------
 
 
-@dataclass
-class RunState:
-    """Carried across publish attempts so a retry re-applies but never re-sends."""
-
-    digested: list[tuple[str, str]] | None = None  # keys emailed on the first attempt
-    ingest: IngestResult | None = None
-    refilter: RefilterResult | None = None
-    pruned: int = 0
-    notes: list[str] = field(default_factory=list)
-
-
-def run_once(
-    db_path: Path,
-    listings: list[Listing],
-    evaluator: Evaluator,
-    details: DetailFetcher,
-    state: RunState,
-    notify: Callable[[list[StoredJob]], None],
-    do_refilter: bool = False,
-    dry_run: bool = False,
-    now: datetime | None = None,
-) -> None:
-    """Ingest -> (refilter) -> digest -> mark digested -> prune, against one DB file.
-
-    Safe to call again on a newer copy of the DB (after a rejected push): ingest is
-    idempotent, details are cached, and the digest is sent only on the first call.
-    """
-    now = now or utcnow()
-    with Storage(db_path) as store:
-        state.ingest = ingest(store, listings, evaluator, details, now)
-        if do_refilter:
-            state.refilter = refilter(store, listings, evaluator, details, now)
-        if not dry_run:
-            store.commit()  # ingestion is kept even if the email step fails below
-        if state.digested is None:
-            pending = store.pending_digest()
-            if pending:
-                notify(pending)
-            state.digested = [s.job.key for s in pending]
-        store.mark_digested(state.digested, now)
-        state.pruned = store.prune_descriptions(now)
-        if dry_run:
-            store.rollback()
+def _mailer(args: argparse.Namespace, smtp: SmtpConfig | None) -> Callable[[Digest], None]:
+    def send(d: Digest) -> None:
+        if args.html:
+            args.html.write_text(d.html)
+        if smtp is None:
+            print(f"Subject: {d.subject}\n\n{d.text}\n")
         else:
-            store.commit()
+            send_digest(d, smtp)
+            print(f"sent to {smtp.to}: {d.subject}")
+
+    return send
+
+
+def _smtp_or_none(args: argparse.Namespace) -> tuple[SmtpConfig | None, int]:
+    if args.dry_run:
+        return None, 0
+    try:
+        return SmtpConfig.from_env(), 0  # fail before fetching anything
+    except DigestConfigError as exc:
+        print(f"error: {exc}")
+        return None, 2
+
+
+def _execute(
+    args: argparse.Namespace,
+    apply: Callable[[Path, int], None],
+) -> tuple[int, object]:
+    """Run `apply` against the right DB: temp copy (dry run), data branch, or local file."""
+    if args.dry_run:
+        with tempfile.TemporaryDirectory() as tmp:
+            copy = Path(tmp) / "jobs.db"
+            if args.sync:
+                if data_branch(args, copy).fetch() is None:
+                    print("error: no data branch yet (see `jobbot sync --seed`)")
+                    return 2, None
+            elif args.db.exists():
+                shutil.copy(args.db, copy)
+            apply(copy, 1)
+        return 0, None
+    if args.sync:
+        try:
+            return 0, data_branch(args).publish(apply, require_existing=True)
+        except (GitError, PushConflict) as exc:
+            print(f"error: {exc}")
+            return 1, None
+    apply(args.db, 1)
+    return 0, None
+
+
+def _print_plan(state: RunState) -> None:
+    plan = state.plan
+    if plan is None:
+        return
+    if plan.alerts:
+        print(f"hit-list alert: {plan.alerts} job(s)")
+    if plan.digest:
+        print(f"digest: {plan.digest} job(s)")
+    if not plan.emailed:
+        print("no new matches; nothing sent")
+    if plan.next_digest:
+        print(f"next digest window: {plan.next_digest:%a %-I%p} ET")
 
 
 def cmd_run(args: argparse.Namespace) -> int:
     started = time.monotonic()
-    smtp = None
-    if not args.dry_run:
-        try:
-            smtp = SmtpConfig.from_env()  # fail before fetching anything
-        except DigestConfigError as exc:
-            print(f"error: {exc}")
-            return 2
-
-    evaluator = Evaluator(load_filters(), load_profile())
+    smtp, code = _smtp_or_none(args)
+    if code:
+        return code
+    cfg = load_filters()
+    evaluator = Evaluator(cfg, load_profile())
     companies = load_companies()
+    priorities = {c.name: c.priority for c in load_companies(include_disabled=True)}
     state = RunState()
-
-    def notify(pending: list[StoredJob]) -> None:
-        digest = build_digest(pending)
-        if args.html:
-            args.html.write_text(digest.html)
-        if smtp is None:
-            print(f"Subject: {digest.subject}\n\n{digest.text}\n")
-        else:
-            send_digest(digest, smtp)
-            print(f"sent digest to {smtp.to}: {digest.subject}")
+    send = _mailer(args, smtp)
 
     with make_client() as client:
         fetched = fetch_all(companies, client)
@@ -123,29 +125,14 @@ def cmd_run(args: argparse.Namespace) -> int:
 
         def apply(path: Path, attempt: int = 1) -> None:
             run_once(
-                path, fetched.listings, evaluator, details, state, notify,
+                path, fetched.listings, evaluator, details, state, send,
+                priorities=priorities, searches=cfg.linkedin_searches,
                 do_refilter=args.refilter, dry_run=args.dry_run,
             )  # fmt: skip
 
-        publish = None
-        if args.dry_run:
-            with tempfile.TemporaryDirectory() as tmp:
-                copy = Path(tmp) / "jobs.db"
-                if args.sync:
-                    if data_branch(args, copy).fetch() is None:
-                        print("error: no data branch yet (see `jobbot sync --seed`)")
-                        return 2
-                elif args.db.exists():
-                    shutil.copy(args.db, copy)
-                apply(copy)
-        elif args.sync:
-            try:
-                publish = data_branch(args).publish(apply, require_existing=True)
-            except (GitError, PushConflict) as exc:
-                print(f"error: {exc}")
-                return 1
-        else:
-            apply(args.db)
+        code, publish = _execute(args, apply)
+        if code:
+            return code
 
     for name, reason in fetched.failures.items():
         print(f"FAILED {name}: {reason}")
@@ -154,8 +141,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     print(
         f"listed {len(fetched.jobs)} | new {ing.new} (matched {ing.matched}, reposts "
         f"{ing.reposts}) | dropped: {dropped} | descriptions fetched {details.requests}"
-        f" ({details.failures} failed) | emailed {len(state.digested or [])} | pruned "
-        f"{state.pruned}"
+        f" ({details.failures} failed) | pruned {state.pruned}"
     )
     if state.refilter:
         rf = state.refilter
@@ -163,13 +149,38 @@ def cmd_run(args: argparse.Namespace) -> int:
             f"refilter: checked {rf.checked} | newly matched {rf.newly_matched} | newly "
             f"unmatched {rf.newly_unmatched} | descriptions fetched {rf.descriptions_fetched}"
         )
+    _print_plan(state)
     if publish:
         print(f"data branch: {publish.outcome} (attempt {publish.attempts})")
     if args.dry_run:
         print("dry run: nothing saved, sent, or pushed")
-    if not state.digested:
-        print("no new matches; nothing sent")
     print(f"took {time.monotonic() - started:.1f}s")
+    return 0
+
+
+def cmd_digest(args: argparse.Namespace) -> int:
+    """Send everything pending now, in one email with the hit list on top."""
+    smtp, code = _smtp_or_none(args)
+    if code:
+        return code
+    cfg = load_filters()
+    priorities = {c.name: c.priority for c in load_companies(include_disabled=True)}
+    state = RunState()
+    send = _mailer(args, smtp)
+
+    def apply(path: Path, attempt: int = 1) -> None:
+        run_once(
+            path, [], Evaluator(cfg), DetailFetcher(None), state, send,
+            priorities=priorities, searches=cfg.linkedin_searches,
+            dry_run=args.dry_run, force_digest=True,
+        )  # fmt: skip
+
+    code, publish = _execute(args, apply)
+    if code:
+        return code
+    _print_plan(state)
+    if publish:
+        print(f"data branch: {publish.outcome} (attempt {publish.attempts})")
     return 0
 
 
@@ -324,6 +335,12 @@ def main(argv: list[str] | None = None) -> int:
         "--sync", action="store_true", help="read and publish jobs.db via the data branch"
     )
     run.set_defaults(func=cmd_run)
+
+    dg = sub.add_parser("digest", help="send everything pending now (hit list on top)")
+    dg.add_argument("--dry-run", action="store_true", help="print instead of sending")
+    dg.add_argument("--html", type=Path, help="also write the digest HTML to this file")
+    dg.add_argument("--sync", action="store_true", help="read and publish via the data branch")
+    dg.set_defaults(func=cmd_digest)
 
     verify = sub.add_parser(
         "verify-companies", help="check every enabled board: error / empty / OK (read-only)"

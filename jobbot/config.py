@@ -25,6 +25,12 @@ class ScoringConfig(BaseModel):
     keywords: dict[str, str]
 
 
+class LinkedInSearch(BaseModel):
+    label: str
+    location: str
+    remote: bool = False
+
+
 class FilterConfig(BaseModel):
     title_exclude: list[str]
     title_include: list[str]
@@ -36,6 +42,7 @@ class FilterConfig(BaseModel):
     keep_undated: bool = True
     locations: LocationConfig
     scoring: ScoringConfig
+    linkedin_searches: list[LinkedInSearch] = []
 
 
 class Profile(BaseModel):

@@ -287,3 +287,18 @@ def test_migrates_v1_database(tmp_path):
         s.commit()
     with Storage(path) as s:  # re-open: no second migration
         assert s.counts()["jobs"] == 3
+
+    # A snapshot of the v1 file was taken before migrating, and only once.
+    [snapshot] = (tmp_path / "backups").iterdir()
+    assert snapshot.name.startswith("jobs-v0-pre-v2-")
+    old = sqlite3.connect(snapshot)
+    cols = {r[1] for r in old.execute("PRAGMA table_info(jobs)")}
+    assert (
+        "description_text" in cols and old.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 2
+    )
+
+
+def test_new_database_needs_no_snapshot(tmp_path):
+    with Storage(tmp_path / "jobs.db"):
+        pass
+    assert not (tmp_path / "backups").exists()

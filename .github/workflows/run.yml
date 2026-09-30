@@ -40,3 +40,12 @@ jobs:
           SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
         run: uv run jobbot run --sync
+
+      # A schema migration copies jobs.db to data/backups/ first; keep that copy.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: jobs-db-pre-migration-${{ github.run_id }}
+          path: data/backups/
+          retention-days: 90
+          if-no-files-found: ignore

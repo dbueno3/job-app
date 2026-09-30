@@ -128,6 +128,15 @@ locations:
     - australia
     - japan
 
+# Footer of the regular digest: generated LinkedIn job-search links (never fetched),
+# newest entry + associate SWE postings since the last digest, one per search.
+linkedin_searches:
+  - label: New York
+    location: New York, New York, United States
+  - label: Remote (US)
+    location: United States
+    remote: true
+
 scoring:
   title_weight: 3
   description_weight: 1

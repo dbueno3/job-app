@@ -1,4 +1,5 @@
 import json
+import shutil
 import sqlite3
 import zlib
 from collections.abc import Iterable
@@ -127,8 +128,9 @@ class Storage:
     """
 
     def __init__(self, path: Path | str = DEFAULT_DB) -> None:
-        if str(path) != ":memory:":
-            Path(path).parent.mkdir(parents=True, exist_ok=True)
+        self.path = None if str(path) == ":memory:" else Path(path)
+        if self.path:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(path)
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA foreign_keys = ON")
@@ -156,11 +158,27 @@ class Storage:
         if version == SCHEMA_VERSION:
             return
         cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(jobs)")}
+        if cols:
+            self._snapshot_before_migration(version)
         with self.conn:
             if "description_text" in cols:  # v1: matches only, plain-text descriptions
                 self._migrate_v1()
             self.conn.executescript(SCHEMA)
             self.conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+    def _snapshot_before_migration(self, from_version: int) -> Path | None:
+        """Copy the DB file aside before changing its schema.
+
+        Lands in <db dir>/backups/; the workflow uploads that folder as an artifact.
+        """
+        if self.path is None:
+            return None
+        backups = self.path.parent / "backups"
+        backups.mkdir(exist_ok=True)
+        stamp = utcnow().strftime("%Y%m%dT%H%M%SZ")
+        dest = backups / f"jobs-v{from_version}-pre-v{SCHEMA_VERSION}-{stamp}.db"
+        shutil.copy2(self.path, dest)
+        return dest
 
     def _migrate_v1(self) -> None:
         """v1 stored only matched jobs, all of them already emailed.
