@@ -1,0 +1,87 @@
+{
+    "absolute_url": "https://job-boards.greenhouse.io/yext/jobs/8192381",
+    "data_compliance": [
+        {
+            "type": "gdpr",
+            "requires_consent": false,
+            "requires_processing_consent": false,
+            "requires_retention_consent": false,
+            "retention_period": null,
+            "demographic_data_consent_applies": false
+        }
+    ],
+    "internal_job_id": 3545060,
+    "location": {
+        "name": "Washington, D.C."
+    },
+    "metadata": [
+        {
+            "id": 66175461,
+            "name": "Probationary Period (Months)",
+            "value": null,
+            "value_type": "single_select"
+        },
+        {
+            "id": 82778,
+            "name": "Job Type",
+            "value": "Non-quota carrying",
+            "value_type": "single_select"
+        },
+        {
+            "id": 159025,
+            "name": "Referral Bonus",
+            "value": "$2,500",
+            "value_type": "single_select"
+        },
+        {
+            "id": 54780,
+            "name": "Location",
+            "value": "Washington, D.C.",
+            "value_type": "single_select"
+        },
+        {
+            "id": 54778,
+            "name": "Category",
+            "value": "Engineering",
+            "value_type": "single_select"
+        }
+    ],
+    "id": 8192381,
+    "updated_at": "2026-09-29T10:07:13-04:00",
+    "requisition_id": "6404",
+    "title": "Senior Software Engineer",
+    "pay_input_ranges": [
+        {
+            "min_cents": 14850000,
+            "max_cents": 30350000,
+            "currency_type": "USD",
+            "title": "Annual Base Pay Range",
+            "blurb": "<p>Pay ranges at Yext are established based on an analysis of salaries for positions with a similar level of accountability and impact in the relevant labor market. Salary levels are expected to change to reflect an employee\u2019s job performance (results and impact) over time. Salaries at the time of hire are typically offered in the lower to middle of the above-referenced range in order to provide the opportunity to reflect performance-based increases over time. In addition to base salaries, employees at Yext are typically eligible for a comprehensive package of benefits including medical, dental and vision benefits; life insurance; short term and long-term disability; 401(k) retirement plan; and vacation and sick leave. Successful candidates may also be eligible for variable pay programs based on performance relative to goals and targets.<br><br><br></p>"
+        }
+    ],
+    "company_name": "Yext",
+    "first_published": "2026-09-15T16:02:54-04:00",
+    "language": "en",
+    "application_deadline": null,
+    "content": "&lt;div class=&quot;content-intro&quot;&gt;&lt;p&gt;Yext (NYSE: YEXT) is the enterprise agentic marketing platform. Built on the world&#39;s most comprehensive structured data platform for local businesses, Yext gives brands and their partners the visibility intelligence to win every moment of discovery \u2013 across AI and traditional search. Yext&#39;s API-first architecture connects structured data to APIs, MCP servers, and generative interfaces, so partners and developers can build purpose-built experiences on the same infrastructure powering Yext&#39;s own products. Thousands of brands and digital marketing partners in financial services, healthcare, retail, hospitality, and food rely on Yext to manage, measure, and optimize visibility at scale. For more information, visit&amp;nbsp;&lt;span&gt;&lt;a href=&quot;http://yext.com&quot; target=&quot;_blank&quot;&gt;yext.com&lt;/a&gt;&lt;/span&gt;.&lt;/p&gt;&lt;/div&gt;&lt;p&gt;At Yext, &lt;strong&gt;Product Engineering&lt;/strong&gt; builds and evolves the technology behind our products and services. We\u2019re looking for senior software engineers who want to solve challenging technical problems, lead the development of systems at scale, and help shape what we build next.&lt;/p&gt;\n&lt;p&gt;We work in an agile environment with two-week sprints and regular demos that keep teams aligned and give engineers clear visibility into the impact of their work. As a senior engineer, you\u2019ll remain deeply involved in designing and building software while providing technical leadership to the engineers around you. You\u2019ll partner closely with Product and Engineering leaders to turn broader priorities into sound technical plans, guide projects through delivery, and help less-experienced engineers continue to grow.&lt;/p&gt;\n&lt;p&gt;We are looking for a senior software engineer to join &lt;strong&gt;Team Recon&lt;/strong&gt;, which owns the customer-facing intelligence layer of our Competitive Intelligence product area. Recon builds the experiences that transform our competitive intelligence datasets into meaningful insights for customers. This includes analysis, visualizations, user interfaces, and agentic workflows. In short, the team builds the \u201cbrains\u201d on top of the data pool and owns the surfaces through which customers explore, understand, and act on competitive intelligence. Engineers on Recon work across the product stack and solve open-ended problems at the intersection of data, AI, and user experience, turning complex information into clear, compelling, and useful products.&lt;/p&gt;\n&lt;p&gt;This role is based in our Rosslyn, VA office, where in-person collaboration plays an important part in how our teams work, learn, and build relationships. We\u2019re looking for people who genuinely value that environment and are comfortable coming into the office at least three days per week. At the same time, we don\u2019t prescribe specific in-office days and want employees to have the flexibility to handle personal needs without disrupting their work or team collaboration.&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;What You\u2019ll Do&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Serve as a technical leader for the team while continuing to contribute directly to the design, implementation, and operation of production software&lt;/li&gt;\n&lt;li&gt;Own complex development efforts from problem definition and technical design through implementation, testing, deployment, and ongoing operation&lt;/li&gt;\n&lt;li&gt;Design sound technical solutions, write and review technical designs, and guide architectural and implementation decisions within the team\u2019s systems&lt;/li&gt;\n&lt;li&gt;Partner with Product and Engineering leadership to translate product priorities into technical plans, identify dependencies and risks, and help determine how the team should approach the work&lt;/li&gt;\n&lt;li&gt;Break complex technical initiatives into clear, manageable pieces and help guide engineers through successful delivery&lt;/li&gt;\n&lt;li&gt;Solve difficult technical problems independently and provide guidance when other engineers encounter challenges&lt;/li&gt;\n&lt;li&gt;Foster a high bar for engineering quality through thoughtful design discussions, code reviews, testing, operational readiness, and continuous improvement&lt;/li&gt;\n&lt;li&gt;Mentor and share knowledge with other engineers, helping less-experienced teammates strengthen their technical skills and judgment&lt;/li&gt;\n&lt;li&gt;Lead production incident response and follow-up, helping the team diagnose complex problems, restore service, and make improvements that prevent recurrence&lt;/li&gt;\n&lt;li&gt;Collaborate with engineers and partners across teams to solve technical problems and coordinate work that spans multiple systems or product areas&lt;/li&gt;\n&lt;li&gt;Proactively identify opportunities to improve our products, architecture, systems, and engineering practices, and help drive those improvements to completion&lt;/li&gt;\n&lt;li&gt;Participate actively in recruiting and interviewing, helping us identify and hire strong engineers and maintain a high technical bar&lt;/li&gt;\n&lt;li&gt;Use AI-assisted development tools thoughtfully throughout design, research, implementation, testing, debugging, and code review&lt;/li&gt;\n&lt;li&gt;Critically evaluate and validate AI-generated output, maintaining ownership of its correctness, security, scalability, maintainability, and alignment with engineering standards&lt;/li&gt;\n&lt;li&gt;Model effective AI-enabled engineering practices, experiment with new capabilities and workflows, and share successful approaches with other engineers&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;What You Have&lt;/strong&gt;&amp;nbsp;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;A BA/BS in Computer Science or a related field or equivalent college-level education&amp;nbsp;&lt;/li&gt;\n&lt;li&gt;7+ years of professional software engineering experience&lt;/li&gt;\n&lt;li&gt;A track record of leading significant technical projects and delivering complex production systems&lt;/li&gt;\n&lt;li&gt;Experience providing technical leadership, mentoring engineers, and supporting the growth of less-experienced team members&lt;/li&gt;\n&lt;li&gt;Experience supervising or managing software engineers, or demonstrated readiness to take on direct-report responsibilities&lt;/li&gt;\n&lt;li&gt;Deep technical judgment and a strong foundation in software architecture, design, data structures, and algorithms&lt;/li&gt;\n&lt;li&gt;Experience designing software systems, evaluating competing approaches, and communicating technical decisions clearly to other engineers&lt;/li&gt;\n&lt;li&gt;The ability to remain deeply hands-on while also guiding the technical work of others&lt;/li&gt;\n&lt;li&gt;Experience diagnosing difficult production problems and leading technical incident response&lt;/li&gt;\n&lt;li&gt;Strong communication and collaboration skills, including experience working across engineering teams and with Product or other business partners&lt;/li&gt;\n&lt;li&gt;Fluency with Java, Go, C++, Python, or a similar programming language (we code primarily in Java and Go)&lt;/li&gt;\n&lt;li&gt;Experience recruiting, interviewing, or evaluating software engineers&lt;/li&gt;\n&lt;li&gt;Experience using AI-assisted development tools and the ability to critically evaluate their output as part of a responsible engineering workflow&lt;/li&gt;\n&lt;li&gt;Sound judgment regarding data privacy, intellectual property, security, and the appropriate use of confidential information when working with AI tools&lt;/li&gt;\n&lt;li&gt;Openness to new technologies, new ways of working, and creative solutions&lt;/li&gt;\n&lt;li&gt;Comfort working in a fast-paced environment&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;#LI-JB2&lt;/p&gt;&lt;div class=&quot;content-pay-transparency&quot;&gt;&lt;div class=&quot;pay-input&quot;&gt;&lt;div class=&quot;description&quot;&gt;&lt;p&gt;Pay ranges at Yext are established based on an analysis of salaries for positions with a similar level of accountability and impact in the relevant labor market. Salary levels are expected to change to reflect an employee\u2019s job performance (results and impact) over time. Salaries at the time of hire are typically offered in the lower to middle of the above-referenced range in order to provide the opportunity to reflect performance-based increases over time. In addition to base salaries, employees at Yext are typically eligible for a comprehensive package of benefits including medical, dental and vision benefits; life insurance; short term and long-term disability; 401(k) retirement plan; and vacation and sick leave. Successful candidates may also be eligible for variable pay programs based on performance relative to goals and targets.&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;title&quot;&gt;Annual Base Pay Range&lt;/div&gt;&lt;div class=&quot;pay-range&quot;&gt;&lt;span&gt;$148,500&lt;/span&gt;&lt;span class=&quot;divider&quot;&gt;&amp;mdash;&lt;/span&gt;&lt;span&gt;$303,500 USD&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;content-conclusion&quot;&gt;&lt;p&gt;Yext is an equal opportunity employer committed to building a results-driven, engaging culture where every employee has the opportunity to contribute to the success of the Company, perform at the highest possible level, and grow their skills and capabilities. Yext welcomes employees and applicants of all backgrounds and demographics, and does not engage in discrimination on the basis of any protected characteristic recognized under applicable law. We also consider qualified applicants regardless of criminal histories, consistent with legal requirements. The Company believes a broad variety of life experiences across the Yext team is critical to its mission to help every business in the world be visible everywhere customers search. By seeking out fresh perspectives and fostering a positive interview experience and employee experience, Yext can remain at the forefront of innovation, and better serve its customers.&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;&lt;span style=&quot;font-weight: 400;&quot;&gt;It is Yext\u2019s policy to provide reasonable accommodations to people with disabilities as required by applicable law. If you have a disability that requires an accommodation in completing this application, interviewing, or participating in the employee selection process, please complete&amp;nbsp;&lt;a href=&quot;https://docs.google.com/forms/d/e/1FAIpQLSexIHU2ZCgSpcOcz5DHaL9Eyk0GIqz-AqdbgbdV8ImC74qkWA/viewform?usp=sf_link&quot; target=&quot;_blank&quot; data-saferedirecturl=&quot;https://www.google.com/url?q=https://docs.google.com/forms/d/e/1FAIpQLSexIHU2ZCgSpcOcz5DHaL9Eyk0GIqz-AqdbgbdV8ImC74qkWA/viewform?usp%3Dsf_link&amp;amp;source=gmail&amp;amp;ust=1630682825064000&amp;amp;usg=AFQjCNEM4K7q8h4cF_oXrXEx8WRpI8YsLA&quot;&gt;this form&lt;/a&gt;.&lt;br&gt;&lt;br&gt;&lt;/span&gt;&lt;strong&gt;Security Alert&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;&lt;span style=&quot;font-weight: 400;&quot;&gt;All legitimate Yext communications come from @yext.com email addresses. Messages from other domains (for example, @yext.team) are not authorized and are likely fraudulent. If you receive a message that seems suspicious, do not share personal information, click on links, or provide payment. Instead, please report the communication to&amp;nbsp;&lt;a href=&quot;mailto:security@yext.com&quot;&gt;security@yext.com&lt;/a&gt;.&lt;br&gt;&lt;/span&gt;&lt;/p&gt;&lt;/div&gt;",
+    "departments": [
+        {
+            "id": 16077,
+            "name": "(18) Technology",
+            "child_ids": [],
+            "parent_id": null
+        }
+    ],
+    "offices": [
+        {
+            "id": 18734,
+            "name": "Washington, D.C.",
+            "location": "Washington, District of Columbia, United States",
+            "child_ids": [],
+            "parent_id": 10473
+        }
+    ],
+    "ai_disclaimer": null,
+    "include_ai_disclaimer": null,
+    "ai_opt_out_request_url": "http://app.greenhouse.io/ai_opt_out_request/job_post/8192381/ai_opt_out"
+}

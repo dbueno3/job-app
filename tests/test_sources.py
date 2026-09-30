@@ -78,7 +78,7 @@ def test_greenhouse_tolerates_missing_optional_fields():
     [job] = GreenhouseSource().parse(payload, "X")
     assert job.title == "SWE"
     assert job.location == ""
-    assert job.description_text == ""
+    assert job.description_text is None  # list without content: fetched later
     assert job.posted_at is None
 
 
@@ -118,8 +118,70 @@ def test_ashby_compensation_hidden_when_company_hides_it():
     assert job.compensation is None
 
 
-def test_greenhouse_has_no_compensation(stripe_jobs):
+def test_greenhouse_list_has_no_compensation(stripe_jobs):
     assert all(j.compensation is None for j in stripe_jobs.values())
+
+
+# --- Greenhouse two-stage fetch ------------------------------------------------------
+
+
+def test_greenhouse_list_url_has_no_content():
+    url = GreenhouseSource().board_url("stripe")
+    assert url == "https://boards-api.greenhouse.io/v1/boards/stripe/jobs"
+    assert GreenhouseSource.needs_details and not AshbySource.needs_details
+
+
+def test_greenhouse_list_without_content_leaves_description_unfetched():
+    jobs = GreenhouseSource().parse(load_fixture("greenhouse_stripe_list.json"), "Stripe")
+    assert len(jobs) == 4
+    assert all(j.description_text is None for j in jobs)
+    assert all(j.title and j.location and j.posted_at for j in jobs)  # enough for stage 1
+
+
+def test_greenhouse_parse_details_single_range():
+    desc, comp = GreenhouseSource().parse_details(load_fixture("greenhouse_job_yext.json"))
+    assert comp == "$148.5K – $303.5K"
+    assert desc.startswith("Yext") and "<" not in desc and "&lt;" not in desc
+
+
+def test_greenhouse_parse_details_multiple_ranges():
+    _, comp = GreenhouseSource().parse_details(load_fixture("greenhouse_job_toast.json"))
+    assert comp == "$94K – $192K across 3 ranges"
+
+
+@pytest.mark.parametrize(
+    "ranges, expected",
+    [
+        ([], None),
+        ([{"min_cents": 0, "max_cents": 0, "currency_type": "USD"}], None),
+        ([{"min_cents": 12000000, "max_cents": 15000000, "currency_type": "USD"}], "$120K – $150K"),
+        (
+            [{"min_cents": 9000000, "max_cents": 11000000, "currency_type": "CAD"}],
+            "CAD 90K – CAD 110K",
+        ),
+    ],
+)
+def test_greenhouse_compensation_format(ranges, expected):
+    payload = {"content": "", "pay_input_ranges": ranges}
+    assert GreenhouseSource().parse_details(payload)[1] == expected
+
+
+def test_greenhouse_fetch_details_hits_per_job_endpoint():
+    job = GreenhouseSource().parse(load_fixture("greenhouse_stripe_list.json"), "Stripe")[0]
+    seen = []
+
+    def handler(request):
+        seen.append(str(request.url))
+        return httpx.Response(200, json=load_fixture("greenhouse_job_yext.json"))
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    filled = GreenhouseSource().fetch_details(client, "stripe", job)
+    assert seen == [
+        f"https://boards-api.greenhouse.io/v1/boards/stripe/jobs/{job.source_job_id}"
+        "?pay_transparency=true"
+    ]
+    assert filled.description_text and filled.compensation == "$148.5K – $303.5K"
+    assert filled.key == job.key and filled.title == job.title  # only details change
 
 
 def test_ashby_normalizes_fields(ramp_jobs):

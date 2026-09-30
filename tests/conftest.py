@@ -18,6 +18,20 @@ def no_network(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def no_real_repo_git(monkeypatch):
+    """Data-branch tests use throwaway repos; never touch this repo or its GitHub remote."""
+    from jobbot import datasync
+
+    real_git = datasync.DataBranch._git
+
+    def guarded(self, *args, **kwargs):
+        assert self.repo.resolve() != datasync.REPO_ROOT.resolve(), "test used the real repo"
+        return real_git(self, *args, **kwargs)
+
+    monkeypatch.setattr(datasync.DataBranch, "_git", guarded)
+
+
+@pytest.fixture(autouse=True)
 def no_sleep(monkeypatch):
     """Polite delays and retry backoff are real sleeps; skip them in tests."""
     monkeypatch.setattr("time.sleep", lambda s: None)

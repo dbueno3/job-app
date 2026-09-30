@@ -18,8 +18,17 @@ SOURCES: dict[str, Source] = {s.name: s for s in (GreenhouseSource(), AshbySourc
 
 
 @dataclass
+class Listing:
+    """One company's board listing from this run."""
+
+    company: Company
+    jobs: list[Job]
+
+
+@dataclass
 class FetchResult:
     jobs: list[Job] = field(default_factory=list)
+    listings: list[Listing] = field(default_factory=list)
     counts: dict[str, int] = field(default_factory=dict)  # company -> job count
     failures: dict[str, str] = field(default_factory=dict)  # company -> reason
 
@@ -48,6 +57,7 @@ def fetch_all(
                 reason = f"{type(exc).__name__}: {exc}"
             else:
                 result.jobs.extend(jobs)
+                result.listings.append(Listing(company, jobs))
                 result.counts[company.name] = len(jobs)
                 continue
         log.warning("skipping %s: %s", company.name, reason)

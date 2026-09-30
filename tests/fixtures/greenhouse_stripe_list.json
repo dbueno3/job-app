@@ -1,0 +1,115 @@
+{
+  "jobs": [
+    {
+      "absolute_url": "https://stripe.com/jobs/search?gh_jid=6692166",
+      "data_compliance": [
+        {
+          "type": "gdpr",
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "demographic_data_consent_applies": false
+        }
+      ],
+      "education": "education_required",
+      "internal_job_id": 3091368,
+      "location": {
+        "name": "Toronto, Canada Remote"
+      },
+      "metadata": null,
+      "id": 6692166,
+      "updated_at": "2026-09-25T16:44:33-04:00",
+      "requisition_id": "See Opening ID",
+      "title": "Backend Engineer, Payments",
+      "company_name": "Stripe",
+      "first_published": "2025-04-29T01:25:47-04:00",
+      "language": "en",
+      "application_deadline": null
+    },
+    {
+      "absolute_url": "https://stripe.com/jobs/search?gh_jid=8230952",
+      "data_compliance": [
+        {
+          "type": "gdpr",
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "demographic_data_consent_applies": false
+        }
+      ],
+      "education": "education_required",
+      "internal_job_id": 3561837,
+      "location": {
+        "name": "Seattle, WA"
+      },
+      "metadata": null,
+      "id": 8230952,
+      "updated_at": "2026-09-25T16:45:09-04:00",
+      "requisition_id": "See Opening ID",
+      "title": "Senior Software Engineer, Backend",
+      "company_name": "Stripe",
+      "first_published": "2026-09-24T12:53:45-04:00",
+      "language": "en",
+      "application_deadline": null
+    },
+    {
+      "absolute_url": "https://stripe.com/jobs/search?gh_jid=8212508",
+      "data_compliance": [
+        {
+          "type": "gdpr",
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "demographic_data_consent_applies": false
+        }
+      ],
+      "education": "education_required",
+      "internal_job_id": 3520042,
+      "location": {
+        "name": "San Francisco, Seattle, New York"
+      },
+      "metadata": null,
+      "id": 8212508,
+      "updated_at": "2026-09-25T16:44:55-04:00",
+      "requisition_id": "See Opening ID",
+      "title": "Software Engineer, Early Career — Immediate Start",
+      "company_name": "Stripe",
+      "first_published": "2026-09-17T19:22:32-04:00",
+      "language": "en",
+      "application_deadline": null
+    },
+    {
+      "absolute_url": "https://stripe.com/jobs/search?gh_jid=8128744",
+      "data_compliance": [
+        {
+          "type": "gdpr",
+          "requires_consent": false,
+          "requires_processing_consent": false,
+          "requires_retention_consent": false,
+          "retention_period": null,
+          "demographic_data_consent_applies": false
+        }
+      ],
+      "education": "education_required",
+      "internal_job_id": 3520042,
+      "location": {
+        "name": "San Francisco, Seattle, New York"
+      },
+      "metadata": null,
+      "id": 8128744,
+      "updated_at": "2026-09-25T16:44:54-04:00",
+      "requisition_id": "See Opening ID",
+      "title": "Software Engineer, New Grad",
+      "company_name": "Stripe",
+      "first_published": "2026-08-31T18:22:27-04:00",
+      "language": "en",
+      "application_deadline": null
+    }
+  ],
+  "meta": {
+    "total": 4
+  }
+}

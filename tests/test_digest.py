@@ -4,16 +4,22 @@ from email.message import EmailMessage
 import pytest
 
 from jobbot import cli, digest
-from jobbot.cli import store_and_notify
+from jobbot.cli import RunState, run_once
+from jobbot.config import load_filters, load_profile
 from jobbot.digest import (
     DigestConfigError,
     SmtpConfig,
     build_digest,
+    group_rows,
     recruiter_search_url,
     send_digest,
+    split_title,
 )
-from jobbot.sources import FetchResult
+from jobbot.models import Company
+from jobbot.pipeline import DetailFetcher, Evaluator
+from jobbot.sources import FetchResult, Listing
 from jobbot.storage import Storage
+from tests.test_filters import make_job
 from tests.test_storage import match
 
 NOW = datetime(2026, 9, 24, 12, tzinfo=UTC)
@@ -26,9 +32,12 @@ def store():
 
 
 def stored(store, *matches):
-    new = store.add_new(list(matches))
-    store.commit()
-    return new
+    """Insert matches and return them as the digest would see them (pending, sorted)."""
+    for m in matches:
+        store.insert(m.job, m, None, NOW)
+    pending = store.pending_digest()
+    store.mark_digested([p.job.key for p in pending], NOW)
+    return pending
 
 
 # --- building -----------------------------------------------------------------
@@ -164,42 +173,113 @@ def test_send_digest_builds_multipart_email(monkeypatch, store):
     assert "<table" in msg.get_body(("html",)).get_content()
 
 
-# --- store_and_notify: commit only after a successful send ---------------------------
+# --- grouping variants ------------------------------------------------------------
 
 
-def test_commits_after_successful_notify(store):
-    sent = []
-    new = store_and_notify(store, [match()], sent.append)
-    assert len(new) == 1 and sent == [new]
-    store.rollback()  # nothing pending: it was already committed
-    assert len(store.list_jobs()) == 1
+def test_split_title():
+    assert split_title("Software Engineer, Agent - Retail") == (
+        "Software Engineer, Agent",
+        "Retail",
+    )
+    assert split_title("Software Engineer – Payments") == ("Software Engineer", "Payments")
+    assert split_title("Software Engineer II") == ("Software Engineer II", None)
+    assert split_title("Front-end Engineer") == ("Front-end Engineer", None)  # unspaced dash
 
 
-def test_failed_notify_rolls_back_so_jobs_are_retried(store):
-    def boom(new):
+SIERRA = ["Travel & Hospitality", "Retail", "Healthcare", "Insurance"]
+
+
+def test_same_company_variants_group_into_one_row(store):
+    jobs = stored(
+        store,
+        *[
+            match(
+                score=2,
+                source_job_id=str(i),
+                company="Sierra",
+                title=f"Software Engineer, Agent - {v}",
+                min_yoe=None if i else 2.0,
+            )
+            for i, v in enumerate(SIERRA)
+        ],  # fmt: skip
+        match(score=1, source_job_id="n", company="Notion", title="Software Engineer - AI"),
+    )
+    rows = group_rows(jobs)
+    assert [len(r.jobs) for r in rows] == [4, 1]
+    assert rows[0].title == "Software Engineer, Agent" and rows[0].min_yoe == 2.0
+    assert [name for name, _ in rows[0].variants] == SIERRA
+    assert rows[1].title == "Software Engineer - AI"  # a single job keeps its full title
+
+    d = build_digest(jobs, now=NOW)
+    assert d.subject.startswith("jobbot: 5 new SWE matches")  # counts postings
+    assert "(4 variants)" in d.html and "(4 variants)" in d.text
+    for v in SIERRA:
+        assert f">{v.replace('&', '&amp;')}</a>" in d.html  # each variant is its own link
+        assert f"- {v}: " in d.text
+    assert d.html.count("<tr>") == 3  # header + 2 rows
+
+
+def test_same_base_title_at_different_companies_not_grouped(store):
+    jobs = stored(
+        store,
+        match(source_job_id="1", company="A", title="Software Engineer - Payments"),
+        match(source_job_id="2", company="B", title="Software Engineer - Payments"),
+    )
+    assert len(group_rows(jobs)) == 2
+
+
+# --- run_once: ingest -> digest -> mark digested --------------------------------------
+
+EVALUATOR = Evaluator(load_filters().model_copy(update={"max_age_days": 100_000}), load_profile())
+ACME = Company(name="Acme", ats="greenhouse", slug="acme")
+
+
+def listing(*ids: str) -> list[Listing]:
+    jobs = [
+        make_job(source_job_id=i, title=f"Software Engineer {i}", description_text="Python.")
+        for i in ids
+    ]
+    return [Listing(ACME, jobs)]
+
+
+def test_run_once_emails_new_matches_once(tmp_path):
+    db, sent = tmp_path / "jobs.db", []
+    run_once(db, listing("1", "2"), EVALUATOR, DetailFetcher(None), RunState(), sent.append)
+    run_once(db, listing("1", "2", "3"), EVALUATOR, DetailFetcher(None), RunState(), sent.append)
+    assert [[s.job.source_job_id for s in batch] for batch in sent] == [["1", "2"], ["3"]]
+
+
+def test_failed_send_leaves_jobs_pending(tmp_path):
+    db = tmp_path / "jobs.db"
+
+    def boom(pending):
         raise OSError("smtp down")
 
     with pytest.raises(OSError):
-        store_and_notify(store, [match()], boom)
-    assert store.list_jobs() == []
-    # Next run: same job is still "new" and gets sent.
+        run_once(db, listing("1"), EVALUATOR, DetailFetcher(None), RunState(), boom)
     sent = []
-    store_and_notify(store, [match()], sent.append)
-    assert len(sent[0]) == 1
+    run_once(db, listing("1"), EVALUATOR, DetailFetcher(None), RunState(), sent.append)
+    assert [s.job.source_job_id for s in sent[0]] == ["1"]  # retried next run
 
 
-def test_dry_run_notifies_but_saves_nothing(store):
-    sent = []
-    new = store_and_notify(store, [match()], sent.append, dry_run=True)
-    assert len(new) == 1 and len(sent) == 1
-    assert store.list_jobs() == []
+def test_retry_on_newer_db_marks_digested_without_resending(tmp_path):
+    state, sent = RunState(), []
+    run_once(tmp_path / "a.db", listing("1"), EVALUATOR, DetailFetcher(None), state, sent.append)
+    # Push rejected: apply again on another copy of the DB. No second email.
+    run_once(tmp_path / "b.db", listing("1"), EVALUATOR, DetailFetcher(None), state, sent.append)
+    assert len(sent) == 1
+    with Storage(tmp_path / "b.db") as s:
+        assert s.pending_digest() == []
 
 
-def test_no_new_matches_sends_nothing(store):
-    stored(store, match())
-    sent = []
-    assert store_and_notify(store, [match()], sent.append) == []
-    assert sent == []
+def test_dry_run_writes_nothing(tmp_path):
+    db, sent = tmp_path / "jobs.db", []
+    run_once(
+        db, listing("1"), EVALUATOR, DetailFetcher(None), RunState(), sent.append, dry_run=True
+    )
+    assert len(sent) == 1
+    with Storage(db) as s:
+        assert s.counts()["jobs"] == 0
 
 
 # --- `jobbot run` end to end (network mocked out) --------------------------------------
@@ -207,8 +287,15 @@ def test_no_new_matches_sends_nothing(store):
 
 @pytest.fixture
 def fake_fetch(monkeypatch):
-    job = match(title="Software Engineer II", company="Affirm", posted_at=datetime.now(UTC)).job
-    monkeypatch.setattr(cli, "fetch_all", lambda companies, client: FetchResult(jobs=[job]))
+    jobs = [
+        make_job(
+            source_job_id="1", title="Software Engineer II", company="Affirm",
+            description_text="2+ years of Python.", posted_at=datetime.now(UTC),
+        )
+    ]  # fmt: skip
+    company = Company(name="Affirm", ats="greenhouse", slug="affirm")
+    result = FetchResult(jobs=jobs, listings=[Listing(company, jobs)])
+    monkeypatch.setattr(cli, "fetch_all", lambda companies, client: result)
 
 
 def test_run_without_smtp_env_fails_fast(monkeypatch, tmp_path, capsys):
@@ -226,8 +313,7 @@ def test_run_dry_run_prints_digest_and_writes_html(fake_fetch, tmp_path, capsys)
     assert "Subject: jobbot: 1 new SWE match" in out
     assert "Affirm — Software Engineer II" in out
     assert "<table" in html.read_text()
-    with Storage(db) as s:
-        assert s.list_jobs() == []
+    assert not db.exists()
 
 
 def test_run_sends_then_second_run_sends_nothing(fake_fetch, monkeypatch, tmp_path, capsys):

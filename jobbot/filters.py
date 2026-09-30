@@ -214,6 +214,15 @@ def _sentences(text: str) -> list[str]:
     return [s.strip() for s in _SENTENCE_BREAK.split(text) if s.strip()]
 
 
+def _drop_covered(gaps: list[str]) -> list[str]:
+    """Drop a single-language gap when a "one of" gap already names it.
+
+    ["one of Java / Kotlin", "Kotlin"] -> ["one of Java / Kotlin"]
+    """
+    covered = {option for g in gaps if g.startswith("one of ") for option in g[7:].split(" / ")}
+    return [g for g in gaps if g.startswith("one of ") or g not in covered]
+
+
 @dataclass
 class GapReport:
     clearance: bool = False
@@ -260,7 +269,7 @@ class GapDetector:
             ):
                 report.gaps.append("US citizenship")
             report.gaps.extend(self._language_gaps(sentence))
-        report.gaps = list(dict.fromkeys(report.gaps))  # dedupe, keep order
+        report.gaps = _drop_covered(list(dict.fromkeys(report.gaps)))  # dedupe, keep order
         return report
 
     def _language_gaps(self, sentence: str) -> list[str]:
@@ -284,7 +293,7 @@ class GapDetector:
         return [self._label(n) for n in missing]
 
 
-# --- dedupe -------------------------------------------------------------------
+# --- repost identity -----------------------------------------------------------
 
 
 def fingerprint(job: Job) -> tuple[str, str, str]:
@@ -294,23 +303,6 @@ def fingerprint(job: Job) -> tuple[str, str, str]:
         return " ".join(s.lower().split())
 
     return (norm(job.company), norm(job.title), norm(job.location))
-
-
-def dedupe(jobs: list[Job]) -> list[Job]:
-    """Drop exact repeats and reposts (same company/title/location), keeping the newest."""
-    best: dict[tuple[str, str, str], Job] = {}
-    for job in jobs:
-        fp = fingerprint(job)
-        current = best.get(fp)
-        if current is None or _newer(job, current):
-            best[fp] = job
-    return list(best.values())
-
-
-def _newer(a: Job, b: Job) -> bool:
-    if a.posted_at is None:
-        return False
-    return b.posted_at is None or a.posted_at > b.posted_at
 
 
 # --- all together -------------------------------------------------------------
@@ -336,7 +328,13 @@ class JobFilter:
         self.gaps = GapDetector(profile or Profile())
 
     def is_new_grad(self, job: Job) -> bool:
-        return any(p.search(job.description_text) for p in self.new_grad)
+        return any(p.search(job.description_text or "") for p in self.new_grad)
+
+    def passes_title_location(self, job: Job) -> bool:
+        """Stage 1: needs no description. Only jobs passing this get descriptions fetched."""
+        return title_ok(job.title, self.exclude, self.include, self.require) and self.location.ok(
+            job
+        )
 
     def evaluate(self, job: Job, now: datetime) -> Evaluation:
         """Cheap checks (date, title, location) run before the regex-heavy description ones."""
@@ -346,6 +344,8 @@ class JobFilter:
             return Evaluation("title")
         if not self.location.ok(job):
             return Evaluation("location")
+        if job.description_text is None:
+            return Evaluation("no description")  # fetch failed or not fetched yet
         if self.is_new_grad(job):
             return Evaluation("new grad")
         min_yoe = parse_min_yoe(job.description_text)

@@ -100,9 +100,14 @@ def mentions_remote(*locations: str) -> bool:
 
 
 class Source(ABC):
-    """One ATS adapter. Subclasses implement board_url() and parse()."""
+    """One ATS adapter. Subclasses implement board_url() and parse().
+
+    If the board listing lacks descriptions (needs_details), fetch_details() fills one
+    job in; the pipeline calls it only for jobs that pass the title + location filters.
+    """
 
     name: str
+    needs_details: bool = False
 
     @abstractmethod
     def board_url(self, slug: str) -> str: ...
@@ -113,3 +118,7 @@ class Source(ABC):
 
     def fetch(self, client: httpx.Client, slug: str, company: str) -> list[Job]:
         return self.parse(get_json(client, self.board_url(slug)), company)
+
+    def fetch_details(self, client: httpx.Client, slug: str, job: Job) -> Job:
+        """Return the job with description (and compensation, if known) filled in."""
+        return job

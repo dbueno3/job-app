@@ -1,15 +1,18 @@
 name: jobbot
 
-# Fetch, filter, and email new SWE matches; commit data/jobs.db back to the repo.
+# Fetch, filter, and email new SWE matches. jobs.db lives on the `data` branch:
+# `jobbot run --sync` pulls it, applies this run, and pushes it back with
+# --force-with-lease (retrying on top of any concurrent `jobbot sync` from my laptop).
 on:
   schedule:
-    - cron: "0 */6 * * *" # every 6 hours (UTC); GitHub may start scheduled runs late
+    - cron: "0 */6 * * *" # every 6 hours (UTC) until phase 5; GitHub may start runs late
   workflow_dispatch:
 
 permissions:
-  contents: write # to commit data/jobs.db back
+  contents: write # to push the data branch
 
-# Never run two at once: both would email the same jobs and race on the DB push.
+# Never run two at once: both would email the same jobs. (Laptop syncs aren't in this
+# group; the lease + re-apply handles those.)
 concurrency:
   group: jobbot
   cancel-in-progress: false
@@ -19,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7 # persists the token, so jobbot's git push works
 
       - uses: astral-sh/setup-uv@v10.2.0 # no floating major tags; pin exact
         with:
@@ -36,16 +39,4 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
-        run: uv run jobbot run
-
-      - name: Commit updated database
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/jobs.db
-          if git diff --cached --quiet; then
-            echo "jobs.db unchanged"
-          else
-            git commit -m "Update jobs.db [skip ci]"
-            git push
-          fi
+        run: uv run jobbot run --sync

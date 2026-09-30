@@ -8,7 +8,6 @@ from jobbot.filters import (
     JobFilter,
     LocationMatcher,
     compile_terms,
-    dedupe,
     is_recent,
     parse_min_yoe,
     title_ok,
@@ -209,6 +208,10 @@ def test_title_kept(title):
         "Graduate Software Engineer",
         "University Grad Software Engineer",
         "Software Engineering Apprenticeship",
+        "Software Engineer II, Android",
+        "Software Engineer, iOS",
+        "Mobile Software Engineer",
+        "Software Engineer - Mobile Platform",
         "Software Engineering Internship, Backend",
         "Large User Sales Managers, Platform Partnerships",  # plural exclude term
         "Tech Leads, Backend",
@@ -324,46 +327,6 @@ def test_is_recent_undated_follows_setting():
     assert not is_recent(job, NOW, 14, keep_undated=False)
 
 
-# --- dedupe -------------------------------------------------------------------
-
-
-def test_dedupe_collapses_reposts_keeping_newest():
-    old = make_job(source_job_id="1", posted_at=NOW - timedelta(days=10))
-    new = make_job(source_job_id="2", posted_at=NOW - timedelta(days=1))
-    [kept] = dedupe([old, new])
-    assert kept.source_job_id == "2"
-
-
-def test_dedupe_ignores_case_and_whitespace():
-    a = make_job(source_job_id="1", title="Software Engineer ")
-    b = make_job(source_job_id="2", title="software  engineer")
-    assert len(dedupe([a, b])) == 1
-
-
-def test_dedupe_keeps_same_title_in_different_locations():
-    a = make_job(source_job_id="1", location="New York, NY")
-    b = make_job(source_job_id="2", location="US-Remote", is_remote=True)
-    assert len(dedupe([a, b])) == 2
-
-
-def test_dedupe_keeps_same_title_at_different_companies():
-    a = make_job(source_job_id="1", company="Stripe")
-    b = make_job(source_job_id="2", company="Brex")
-    assert len(dedupe([a, b])) == 2
-
-
-def test_dedupe_exact_repeat():
-    job = make_job()
-    assert len(dedupe([job, job.model_copy()])) == 1
-
-
-def test_dedupe_prefers_dated_over_undated():
-    undated = make_job(source_job_id="1", posted_at=None)
-    dated = make_job(source_job_id="2")
-    assert dedupe([undated, dated])[0].source_job_id == "2"
-    assert dedupe([dated, undated])[0].source_job_id == "2"
-
-
 # --- new-grad descriptions ------------------------------------------------------
 
 JOB_FILTER = JobFilter(CFG)
@@ -476,6 +439,21 @@ GAPS = GapDetector(PROFILE)
 )
 def test_language_gaps(text, gaps):
     assert GAPS.detect(text).gaps == gaps
+
+
+def test_single_gap_dropped_when_one_of_gap_covers_it():
+    text = "Strong proficiency with Java, Kotlin, or other languages.\n- Experience with Kotlin."
+    assert GAPS.detect(text).gaps == ["one of Java / Kotlin"]
+
+
+def test_learning_label_covered_too():
+    text = "Experience with Go or TypeScript.\n- 5+ years of experience with Go."
+    assert GAPS.detect(text).gaps == ["one of Go (learning) / TypeScript"]
+
+
+def test_uncovered_single_gap_kept():
+    text = "Experience with C++ or Rust.\n- Experience with Kotlin."
+    assert GAPS.detect(text).gaps == ["one of C++ / Rust", "Kotlin"]
 
 
 def test_gaps_deduped_across_sentences():

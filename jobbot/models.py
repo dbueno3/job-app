@@ -35,7 +35,7 @@ class Job(BaseModel):
     location: str
     is_remote: bool
     url: str
-    description_text: str
+    description_text: str | None = None  # None until fetched (Greenhouse two-stage fetch)
     posted_at: datetime | None = None  # true first-published date only; never last-updated
     first_seen_at: datetime = Field(default_factory=utcnow)
     compensation: str | None = None  # human-readable range, when the ATS publishes one

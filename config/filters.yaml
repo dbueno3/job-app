@@ -39,6 +39,10 @@ title_exclude:
   - hardware engineer
   - electrical engineer
   - mechanical engineer
+  # mobile roles
+  - android
+  - ios
+  - mobile
 
 title_include:
   - software engineer
