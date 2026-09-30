@@ -182,6 +182,8 @@ successful send. Send nothing if there are no new matches.
   another private repo using them) plus `workflow_dispatch`. Every run fetches and
   stores, and emails any new priority-1 matches immediately.
   The regular digest is sent only on the first run at or after 7am and 9pm America/New_York.
+  The schedule uses the cron `timezone: America/New_York` key (GitHub, Mar 2026) so the
+  quiet hours follow DST; the digest-window decision still happens in Python.
   Cron is UTC, so do the time check in Python with `zoneinfo` so DST is handled.
   GitHub may delay scheduled runs, and that's acceptable.
 - Push `jobs.db` to the `data` branch only if it changed. The repo is private because

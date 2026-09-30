@@ -1,11 +1,18 @@
 name: jobbot
 
-# Fetch, filter, and email new SWE matches. jobs.db lives on the `data` branch:
+# Fetch, filter, and email new SWE matches: hit-list alerts immediately, everyone
+# else at 7am / 9pm ET. jobs.db lives on the `data` branch:
 # `jobbot run --sync` pulls it, applies this run, and pushes it back with
 # --force-with-lease (retrying on top of any concurrent `jobbot sync` from my laptop).
 on:
   schedule:
-    - cron: "0 */6 * * *" # every 6 hours (UTC) until phase 5; GitHub may start runs late
+    # Hourly at :07, except 1-4am ET (quiet hours, to save Actions minutes; another
+    # private repo shares them). :07 dodges top-of-hour scheduler congestion. The
+    # timezone key (GitHub, Mar 2026) keeps the quiet hours right across DST. Runs
+    # may start late; digest timing is decided in Python (first run at/after
+    # 7am and 9pm ET), so a late run just sends a little later.
+    - cron: "7 0,5-23 * * *"
+      timezone: "America/New_York"
   workflow_dispatch:
 
 permissions:

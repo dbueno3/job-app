@@ -1,0 +1,29 @@
+name: verify-companies
+
+# Weekly board check: 404 / error, empty (abandoned or moved), OK with job counts.
+# Read-only: never edits companies.yaml. Fails on errors, so GitHub emails me.
+on:
+  schedule:
+    - cron: "0 9 * * 1" # Mondays 9am
+      timezone: "America/New_York"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.2.0 # no floating major tags; pin exact
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Verify every enabled board
+        run: uv run jobbot verify-companies
