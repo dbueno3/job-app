@@ -6,10 +6,21 @@ from jobbot.sources.base import Source, html_to_text, mentions_remote
 
 
 class AshbySource(Source):
+    """Ashby public posting API.
+
+    posted_at <- `publishedAt`. Verified 2026-09-29 against Ramp's board: values go back
+    to 2023 across 76 distinct dates, so it is not reset on edits. There is no
+    last-updated field in this API.
+
+    compensation <- `compensation.compensationTierSummary` (e.g. "$120K – $150K • Offers
+    Equity") with includeCompensation=true, only when the company displays pay on its
+    own posting (`shouldDisplayCompensationOnJobPostings`).
+    """
+
     name = "ashby"
 
     def board_url(self, slug: str) -> str:
-        return f"https://api.ashbyhq.com/posting-api/job-board/{slug}"
+        return f"https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true"
 
     def parse(self, payload: Any, company: str) -> list[Job]:
         jobs = []
@@ -39,6 +50,14 @@ class AshbySource(Source):
                     url=raw["jobUrl"],
                     description_text=description.strip(),
                     posted_at=datetime.fromisoformat(published) if published else None,
+                    compensation=_compensation(raw),
                 )
             )
         return jobs
+
+
+def _compensation(raw: dict) -> str | None:
+    if raw.get("shouldDisplayCompensationOnJobPostings") is False:
+        return None
+    summary = (raw.get("compensation") or {}).get("compensationTierSummary")
+    return summary.strip() if summary and summary.strip() else None

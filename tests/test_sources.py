@@ -3,8 +3,10 @@ from datetime import datetime
 import httpx
 import pytest
 
-from jobbot.config import Company, load_companies
-from jobbot.sources import SOURCES, fetch_all
+from jobbot.cli import main
+from jobbot.config import ConfigError, load_companies
+from jobbot.models import Company
+from jobbot.sources import fetch_all
 from jobbot.sources.ashby import AshbySource
 from jobbot.sources.base import BoardNotFound, get_json, html_to_text
 from jobbot.sources.greenhouse import GreenhouseSource
@@ -89,7 +91,35 @@ def ramp_jobs():
 
 
 def test_ashby_parses_all_jobs(ramp_jobs):
-    assert len(ramp_jobs) == 3
+    assert len(ramp_jobs) == 4
+
+
+def test_ashby_url_requests_compensation():
+    assert AshbySource().board_url("ramp").endswith("/ramp?includeCompensation=true")
+
+
+def test_ashby_compensation(ramp_jobs):
+    assert ramp_jobs["bca0346c-b843-4795-96df-6091f51e421b"].compensation == (
+        "$168K – $324.5K • Offers Equity"
+    )
+    # Company doesn't display pay on this posting, so neither do we.
+    assert ramp_jobs["1515fe6d-1d8e-475b-a5ee-cefe43e78cb7"].compensation is None
+
+
+def test_ashby_compensation_hidden_when_company_hides_it():
+    raw = {
+        "id": "x",
+        "title": "SWE",
+        "jobUrl": "u",
+        "shouldDisplayCompensationOnJobPostings": False,
+        "compensation": {"compensationTierSummary": "$100K – $150K"},
+    }
+    [job] = AshbySource().parse({"jobs": [raw]}, "X")
+    assert job.compensation is None
+
+
+def test_greenhouse_has_no_compensation(stripe_jobs):
+    assert all(j.compensation is None for j in stripe_jobs.values())
 
 
 def test_ashby_normalizes_fields(ramp_jobs):
@@ -175,19 +205,121 @@ def test_fetch_all_skips_failing_boards(monkeypatch):
         Company(name="Stripe", ats="greenhouse", slug="stripe"),
         Company(name="Gone", ats="greenhouse", slug="gone"),
         Company(name="Broken", ats="greenhouse", slug="broken"),
-        Company(name="Weird", ats="workday", slug="weird"),
+        Company(name="Weird", ats="lever", slug="weird"),  # no adapter yet
         Company(name="Ramp", ats="ashby", slug="ramp"),
     ]
     result = fetch_all(companies, client)
-    assert result.counts == {"Stripe": 5, "Ramp": 3}
-    assert len(result.jobs) == 8
+    assert result.counts == {"Stripe": 5, "Ramp": 4}
+    assert len(result.jobs) == 9
     assert set(result.failures) == {"Gone", "Broken", "Weird"}
     assert "404" in result.failures["Gone"]
 
 
+def test_fetch_all_pauses_between_boards():
+    client = mock_client({})
+    sleeps = []
+    companies = [Company(name=n, ats="greenhouse", slug=n) for n in ("a", "b", "c")]
+    fetch_all(companies, client, delay=0.5, sleep=sleeps.append)
+    assert sleeps == [0.5, 0.5]  # between boards, not before the first
+
+
+def test_fetch_all_lever_reports_missing_adapter():
+    result = fetch_all([Company(name="Etsy", ats="lever", slug="etsy")], mock_client({}))
+    assert "no adapter" in result.failures["Etsy"]
+
+
+# --- companies.yaml validation ---------------------------------------------------
+
+
+def write_yaml(tmp_path, body: str):
+    path = tmp_path / "companies.yaml"
+    path.write_text(body)
+    return path
+
+
 def test_seed_companies_config_is_valid():
-    companies = load_companies()
+    companies = load_companies(include_disabled=True)
     assert {"Stripe", "Brex", "Affirm", "Ramp", "Mercury"} <= {c.name for c in companies}
-    assert all(c.ats in SOURCES for c in companies)
-    boards = [(c.ats, c.slug) for c in companies]
-    assert len(boards) == len(set(boards)), "duplicate board in companies.yaml"
+    assert all(c.priority in (1, 2) for c in companies)
+
+
+def test_company_defaults(tmp_path):
+    path = write_yaml(tmp_path, "companies:\n  - {name: A, ats: ashby, slug: a}\n")
+    [c] = load_companies(path)
+    assert c.priority == 2 and c.enabled is True
+
+
+def test_disabled_companies_are_skipped_unless_asked(tmp_path):
+    path = write_yaml(
+        tmp_path,
+        "companies:\n"
+        "  - {name: A, ats: ashby, slug: a}\n"
+        "  - {name: B, ats: ashby, slug: b, enabled: false}\n",
+    )
+    assert [c.name for c in load_companies(path)] == ["A"]
+    assert [c.name for c in load_companies(path, include_disabled=True)] == ["A", "B"]
+
+
+@pytest.mark.parametrize(
+    "entry, message",
+    [
+        ("{name: A, ats: workday, slug: a}", "'A'"),  # unknown ats
+        ("{name: A, ats: ashby, slug: a, priority: 3}", "'A'"),  # priority must be 1 or 2
+        ("{name: A, ats: ashby, slug: a, priorty: 1}", "priorty"),  # typo'd field
+        ("{name: A, ats: ashby}", "slug"),  # missing slug
+    ],
+)
+def test_invalid_company_fails_loudly(tmp_path, entry, message):
+    path = write_yaml(tmp_path, f"companies:\n  - {entry}\n")
+    with pytest.raises(ConfigError, match=message):
+        load_companies(path)
+
+
+def test_duplicate_board_fails_loudly(tmp_path):
+    path = write_yaml(
+        tmp_path,
+        "companies:\n"
+        "  - {name: Mercury, ats: greenhouse, slug: mercury}\n"
+        "  - {name: Mercury again, ats: greenhouse, slug: mercury}\n"
+        "  - {name: Mercury Ashby, ats: ashby, slug: mercury}\n",  # same slug, other ATS: fine
+    )
+    with pytest.raises(ConfigError, match="greenhouse/mercury"):
+        load_companies(path)
+
+
+# --- verify-companies --------------------------------------------------------------
+
+
+def test_verify_companies_reports_three_cases(monkeypatch, capsys):
+    companies = [
+        Company(name="Stripe", ats="greenhouse", slug="stripe"),
+        Company(name="Mercury", ats="ashby", slug="mercury"),
+        Company(name="Gone", ats="greenhouse", slug="gone"),
+    ]
+    client = mock_client(
+        {
+            "/v1/boards/stripe/jobs": httpx.Response(
+                200, json=load_fixture("greenhouse_stripe.json")
+            ),
+            "/posting-api/job-board/mercury": httpx.Response(200, json={"jobs": []}),
+        }
+    )
+    monkeypatch.setattr("jobbot.cli.load_companies", lambda: companies)
+    monkeypatch.setattr("jobbot.cli.make_client", lambda: client)
+
+    assert main(["verify-companies"]) == 1  # an error board makes it exit non-zero
+    out = capsys.readouterr().out
+    errors, rest = out.split("EMPTY")
+    empty, ok = rest.split("OK")
+    assert "Gone [greenhouse/gone]" in errors and "404" in errors
+    assert "Mercury [ashby/mercury]" in empty
+    assert "Stripe [greenhouse/stripe]: 5 jobs" in ok
+
+
+def test_cli_reports_config_errors(monkeypatch, capsys):
+    def bad():
+        raise ConfigError("companies.yaml: duplicate (ats, slug): greenhouse/x")
+
+    monkeypatch.setattr("jobbot.cli.load_companies", bad)
+    assert main(["verify-companies"]) == 2
+    assert "config error" in capsys.readouterr().out

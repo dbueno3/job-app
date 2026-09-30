@@ -7,6 +7,16 @@ from jobbot.sources.base import Source, html_to_text, mentions_remote
 
 
 class GreenhouseSource(Source):
+    """Greenhouse Job Board API.
+
+    posted_at <- `first_published`. Verified 2026-09-29 against Stripe's board: it stays
+    fixed (postings first published in 2023 still say 2023) while `updated_at` moves on
+    every edit (686 of 710 jobs had updated_at later than first_published). `updated_at`
+    is a last-updated date and is never used.
+
+    compensation: the list endpoint has no pay field, so it stays None.
+    """
+
     name = "greenhouse"
 
     def board_url(self, slug: str) -> str:

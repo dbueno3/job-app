@@ -3,7 +3,7 @@ import logging
 from collections.abc import Callable
 from pathlib import Path
 
-from jobbot.config import load_companies, load_filters
+from jobbot.config import ConfigError, load_companies, load_filters
 from jobbot.digest import DigestConfigError, SmtpConfig, build_digest, send_digest
 from jobbot.models import Match
 from jobbot.pipeline import select_matches
@@ -100,6 +100,31 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_verify_companies(args: argparse.Namespace) -> int:
+    """Report each enabled board as error, empty, or OK. Never edits companies.yaml."""
+    companies = load_companies()
+    with make_client() as client:
+        result = fetch_all(companies, client)
+
+    def label(c) -> str:
+        return f"{c.name} [{c.ats}/{c.slug}]"
+
+    errors = [c for c in companies if c.name in result.failures]
+    empty = [c for c in companies if result.counts.get(c.name) == 0]
+    ok = [c for c in companies if result.counts.get(c.name, 0) > 0]
+
+    print(f"ERROR ({len(errors)}): 404 or failed request")
+    for c in errors:
+        print(f"  {label(c)}: {result.failures[c.name]}")
+    print(f"EMPTY ({len(empty)}): board exists but has zero jobs (abandoned or moved?)")
+    for c in empty:
+        print(f"  {label(c)}")
+    print(f"OK ({len(ok)}):")
+    for c in sorted(ok, key=lambda c: -result.counts[c.name]):
+        print(f"  {label(c)}: {result.counts[c.name]} jobs")
+    return 1 if errors else 0
+
+
 def cmd_list(args: argparse.Namespace) -> int:
     with Storage(args.db) as store:
         print_jobs(store.list_jobs(args.status), show_url=args.urls)
@@ -129,6 +154,11 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--html", type=Path, help="also write the digest HTML to this file")
     run.set_defaults(func=cmd_run)
 
+    verify = sub.add_parser(
+        "verify-companies", help="check every enabled board: error / empty / OK (read-only)"
+    )
+    verify.set_defaults(func=cmd_verify_companies)
+
     statuses = [s.value for s in Status]
     ls = sub.add_parser("list", help="list stored jobs")
     ls.add_argument("--status", choices=statuses, help="only jobs with this status")
@@ -146,7 +176,11 @@ def main(argv: list[str] | None = None) -> int:
         level=logging.INFO if args.verbose else logging.WARNING,
         format="%(levelname)s %(name)s: %(message)s",
     )
-    return args.func(args)
+    try:
+        return args.func(args)
+    except ConfigError as exc:
+        print(f"config error: {exc}")
+        return 2
 
 
 if __name__ == "__main__":

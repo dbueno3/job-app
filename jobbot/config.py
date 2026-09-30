@@ -1,15 +1,16 @@
+from collections import Counter
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
+
+from jobbot.models import Company
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 
 
-class Company(BaseModel):
-    name: str
-    ats: str
-    slug: str
+class ConfigError(Exception):
+    """A config file is invalid. The message says which entry and why."""
 
 
 class LocationConfig(BaseModel):
@@ -37,9 +38,26 @@ class FilterConfig(BaseModel):
     scoring: ScoringConfig
 
 
-def load_companies(path: Path = CONFIG_DIR / "companies.yaml") -> list[Company]:
+def load_companies(
+    path: Path = CONFIG_DIR / "companies.yaml", include_disabled: bool = False
+) -> list[Company]:
+    """Load and validate companies.yaml. Raises ConfigError on any bad entry.
+
+    Read-only: the file is never rewritten, so its comments (my notes) are preserved.
+    """
     data = yaml.safe_load(path.read_text()) or {}
-    return [Company(**c) for c in data.get("companies", [])]
+    companies = []
+    for i, raw in enumerate(data.get("companies") or [], start=1):
+        try:
+            companies.append(Company(**raw))
+        except (ValidationError, TypeError) as exc:
+            label = raw.get("name", f"entry #{i}") if isinstance(raw, dict) else f"entry #{i}"
+            raise ConfigError(f"{path.name}: invalid company {label!r}: {exc}") from exc
+    dupes = [b for b, n in Counter((c.ats, c.slug) for c in companies).items() if n > 1]
+    if dupes:
+        listed = ", ".join(f"{ats}/{slug}" for ats, slug in dupes)
+        raise ConfigError(f"{path.name}: duplicate (ats, slug): {listed}")
+    return companies if include_disabled else [c for c in companies if c.enabled]
 
 
 def load_filters(path: Path = CONFIG_DIR / "filters.yaml") -> FilterConfig:

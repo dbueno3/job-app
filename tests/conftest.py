@@ -17,6 +17,12 @@ def no_network(monkeypatch):
     monkeypatch.setattr(httpx.HTTPTransport, "handle_request", blocked)
 
 
+@pytest.fixture(autouse=True)
+def no_sleep(monkeypatch):
+    """Polite delays and retry backoff are real sleeps; skip them in tests."""
+    monkeypatch.setattr("time.sleep", lambda s: None)
+
+
 def load_fixture(name: str):
     return json.loads((FIXTURES / name).read_text())
 
