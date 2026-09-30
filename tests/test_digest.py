@@ -32,6 +32,7 @@ from jobbot.models import Company
 from jobbot.pipeline import DetailFetcher, Evaluator
 from jobbot.sources import FetchResult, Listing
 from jobbot.storage import Storage
+from tests.conftest import FIXTURE_CONFIG
 from tests.test_filters import make_job
 from tests.test_storage import match
 
@@ -285,10 +286,14 @@ MORNING = utc("2026-09-30T11:30:00")  # 7:30am EDT: the 7am window is due
 MIDDAY = utc("2026-09-30T16:00:00")  # noon EDT: between windows
 
 
+# Fixture config, not config/companies.yaml: the alert path is always exercised, and
+# whatever I set (or clear) in my real hit list can never fail CI.
+FIXTURE_COMPANIES = load_companies(FIXTURE_CONFIG / "companies.yaml", include_disabled=True)
+PRIORITIES = {c.name: c.priority for c in FIXTURE_COMPANIES}
+
+
 def _hit_list_company() -> Company:
-    hits = [c for c in load_companies() if c.priority == 1]
-    assert hits, "companies.yaml has no priority: 1 company; set at least one"
-    return hits[0]
+    return next(c for c in FIXTURE_COMPANIES if c.priority == 1 and c.enabled)
 
 
 def _pending(store, companies_titles):
@@ -297,15 +302,14 @@ def _pending(store, companies_titles):
         store.insert(m.job, m, None, MORNING - timedelta(hours=1))
 
 
-def test_real_hit_list_company_is_emailed_immediately_between_windows(store):
-    hit = _hit_list_company()  # a real priority-1 company from companies.yaml
-    priorities = {c.name: c.priority for c in load_companies(include_disabled=True)}
-    other = next(c for c in load_companies() if c.priority == 2)
+def test_hit_list_company_is_emailed_immediately_between_windows(store):
+    hit = _hit_list_company()
+    other = next(c for c in FIXTURE_COMPANIES if c.priority == 2)
     _pending(store, [(hit.name, "Software Engineer II"), (other.name, "Backend Engineer")])
     store.set_meta(WINDOW_DONE, latest_window(MIDDAY).isoformat())  # 7am already handled
 
     sent = []
-    plan = plan_and_send(store, sent.append, priorities, [], MIDDAY)
+    plan = plan_and_send(store, sent.append, PRIORITIES, [], MIDDAY)
 
     assert [d.subject for d in sent] == [f"jobbot hit list: {hit.name} — Software Engineer II"]
     assert plan.alerts == 1 and plan.digest == 0
@@ -342,7 +346,10 @@ def test_force_sends_everything_now_with_hit_list_on_top(store):
 
 # --- run_once: end to end on a DB file ----------------------------------------------
 
-EVALUATOR = Evaluator(load_filters().model_copy(update={"max_age_days": 100_000}), load_profile())
+EVALUATOR = Evaluator(
+    load_filters(FIXTURE_CONFIG / "filters.yaml").model_copy(update={"max_age_days": 100_000}),
+    load_profile(FIXTURE_CONFIG / "profile.yaml"),
+)
 ACME = Company(name="Acme", ats="greenhouse", slug="acme")
 
 
@@ -377,12 +384,11 @@ def test_run_once_digest_twice_a_day(tmp_path):
         assert s.get_meta(LAST_SENT) == utc("2026-10-01T01:10:00").isoformat()
 
 
-def test_real_hit_list_company_run_once_sends_immediately(tmp_path):
+def test_hit_list_company_run_once_sends_immediately(tmp_path):
     hit = _hit_list_company()
-    priorities = {c.name: c.priority for c in load_companies(include_disabled=True)}
     db, sent = tmp_path / "jobs.db", []
     run(db, [], sent, now=MORNING)  # handle the 7am window first
-    run(db, listing("h", company=hit), sent, now=MIDDAY, priorities=priorities)
+    run(db, listing("h", company=hit), sent, now=MIDDAY, priorities=PRIORITIES)
     [alert] = sent
     assert alert.subject == f"jobbot hit list: {hit.name} — Software Engineer h"
 
@@ -533,3 +539,12 @@ def test_digest_command_sends_pending_now_then_nothing(fake_fetch, smtp, tmp_pat
     assert cli.main(["--db", str(db), "digest"]) == 0
     assert "no new matches; nothing sent" in capsys.readouterr().out
     assert len(FakeSMTP.instances) == 1
+
+
+def test_empty_hit_list_is_valid_and_never_blocks_a_run(store):
+    """Clearing every priority-1 flag is a valid choice: everything goes to the digest."""
+    _pending(store, [("Ramp", "Software Engineer II")])
+    sent = []
+    plan_and_send(store, sent.append, {}, [], MORNING)
+    [d] = sent
+    assert d.subject.startswith("jobbot: 1 new SWE match")

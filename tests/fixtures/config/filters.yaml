@@ -1,0 +1,155 @@
+# Title terms are matched case-insensitively on word boundaries,
+# so "sr" won't match "Sre" and "intern" won't match "Internal".
+title_exclude:
+  - senior
+  - sr
+  - staff
+  - principal
+  - lead
+  - manager
+  - director
+  - head of
+  - architect
+  - intern
+  - internship
+  # roles aimed at students / new grads (graduation-year hiring)
+  - new grad
+  - new graduate
+  - early career
+  - university grad
+  - university graduate
+  - recent grad
+  - recent graduate
+  - graduate          # "Graduate Software Engineer" = grad program
+  - apprentice
+  - apprenticeship
+  # "engineer" roles that aren't software engineering
+  - analytics engineer
+  - security engineer
+  - solutions engineer
+  - sales engineer
+  - support engineer
+  - customer engineer
+  - field engineer
+  - implementation engineer
+  - integration engineer
+  - systems engineer
+  - business systems
+  - network engineer
+  - hardware engineer
+  - electrical engineer
+  - mechanical engineer
+  # mobile roles
+  - android
+  - ios
+  - mobile
+
+title_include:
+  - software engineer
+  - software developer
+  - swe
+  - backend
+  - platform
+  - infrastructure
+  - associate
+  - junior
+  - engineer i
+  - engineer ii
+  - engineer 1
+  - engineer 2
+
+# The title must ALSO contain one of these, so broad include terms like
+# "associate" or "platform" can't let through "Operations Associate" or
+# "Account Executive, Platforms".
+title_require:
+  - engineer
+  - developer
+  - swe
+  - sde
+  - programmer
+
+# Keep jobs whose lowest stated years-of-experience minimum is between these,
+# or that state no requirement at all. min_yoe: 1 drops "0-2 years" roles.
+min_yoe: 1
+max_yoe: 3
+
+# Descriptions matching any of these are new-grad roles and get dropped, even
+# with a normal title (e.g. "Software Engineer 2" hiring "Summer 2026 graduates").
+# Each needs a year or a months cap, so "mentor early-career engineers" or
+# "new grads, please don't apply here" don't match. Case-insensitive regex.
+new_grad_patterns:
+  - '\bgraduat\w*\b[^.\n]{0,40}?\b20[2-3]\d\b'           # graduating between Sep 2026 - Jul 2027
+  - '\b(?:obtained|completed|earned|conferred)\s+(?:by|in|before|between)\b[^.\n]{0,20}?\b20[2-3]\d\b'  # degree obtained by summer 2027
+  - '\bclass\s+of\s+20[2-3]\d\b'
+  - '\b(?:no more than|up to|less than|fewer than)\s+\d{1,2}\s+months\b'  # up to 18 months of experience
+
+# Only keep jobs posted within this many days. Jobs with no posting date
+# are kept when keep_undated is true.
+max_age_days: 14
+keep_undated: true
+
+locations:
+  # Any of these (word-boundary match) keeps the job.
+  include:
+    - new york
+    - nyc
+    - ny
+    - brooklyn
+  # A remote job is kept if it mentions one of these...
+  us_markers:
+    - us
+    - u.s.
+    - usa
+    - united states
+    - north america
+  # ...or if it mentions none of these (plain "Remote" is assumed US-eligible).
+  non_us_markers:
+    - canada
+    - toronto
+    - vancouver
+    - mexico
+    - brazil
+    - latam
+    - uk
+    - united kingdom
+    - london
+    - ireland
+    - dublin
+    - europe
+    - emea
+    - germany
+    - poland
+    - romania
+    - spain
+    - netherlands
+    - india
+    - apac
+    - singapore
+    - australia
+    - japan
+
+# Footer of the regular digest: generated LinkedIn job-search links (never fetched),
+# newest entry + associate SWE postings since the last digest, one per search.
+linkedin_searches:
+  - label: New York
+    location: New York, New York, United States
+  - label: Remote (US)
+    location: United States
+    remote: true
+
+scoring:
+  title_weight: 3
+  description_weight: 1
+  # name -> regex, matched case-insensitively. `(?-i:...)` forces case-sensitive,
+  # which keeps "Go" (the language) from matching "go-to-market" or "go".
+  keywords:
+    Go: '(?-i:\bGo\b)(?!-to|\s+to\s+market)|\bgolang\b'
+    Python: '\bpython\b'
+    Docker: '\bdocker\b'
+    Linux: '\blinux\b'
+    Kubernetes: '\bkubernetes\b|\bk8s\b'
+    Terraform: '\bterraform\b'
+    PostgreSQL: '\bpostgres(ql)?\b'
+    FastAPI: '\bfastapi\b'
+    payments: '\bpayments?\b'
+    fintech: '\bfintech\b'

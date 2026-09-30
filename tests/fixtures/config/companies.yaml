@@ -1,0 +1,18 @@
+# Test fixture: NOT my real config. Tests read this so that changing
+# config/companies.yaml (e.g. clearing the hit list) can never break CI.
+companies:
+  - name: Ramp
+    ats: ashby
+    slug: ramp
+    priority: 1
+  - name: Stripe
+    ats: greenhouse
+    slug: stripe
+    priority: 1
+  - name: Acme
+    ats: greenhouse
+    slug: acme
+  - name: Paused Co
+    ats: greenhouse
+    slug: paused
+    enabled: false

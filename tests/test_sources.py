@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from jobbot.cli import main
-from jobbot.config import ConfigError, load_companies
+from jobbot.config import ConfigError, load_companies, load_filters, load_profile
 from jobbot.models import Company
 from jobbot.sources import fetch_all
 from jobbot.sources.ashby import AshbySource
@@ -299,10 +299,13 @@ def write_yaml(tmp_path, body: str):
     return path
 
 
-def test_seed_companies_config_is_valid():
-    companies = load_companies(include_disabled=True)
-    assert {"Stripe", "Brex", "Affirm", "Ramp", "Mercury"} <= {c.name for c in companies}
-    assert all(c.priority in (1, 2) for c in companies)
+def test_real_configs_load():
+    """My real config/ must parse (a typo like `priorty` would break the bot's run
+    anyway). Nothing about its *contents* is asserted: any valid choice, like an
+    empty hit list or a removed company, must never fail CI."""
+    load_companies(include_disabled=True)
+    load_filters()
+    load_profile()
 
 
 def test_company_defaults(tmp_path):
@@ -366,7 +369,7 @@ def test_verify_companies_reports_three_cases(monkeypatch, capsys):
             "/posting-api/job-board/mercury": httpx.Response(200, json={"jobs": []}),
         }
     )
-    monkeypatch.setattr("jobbot.cli.load_companies", lambda: companies)
+    monkeypatch.setattr("jobbot.cli.load_companies", lambda **kw: companies)
     monkeypatch.setattr("jobbot.cli.make_client", lambda: client)
 
     assert main(["verify-companies"]) == 1  # an error board makes it exit non-zero
@@ -378,8 +381,22 @@ def test_verify_companies_reports_three_cases(monkeypatch, capsys):
     assert "Stripe [greenhouse/stripe]: 5 jobs" in ok
 
 
+def test_verify_companies_warns_when_no_hit_list(monkeypatch, capsys):
+    routes = {"/v1/boards/stripe/jobs": httpx.Response(200, json={"jobs": []})}
+    monkeypatch.setattr("jobbot.cli.make_client", lambda: mock_client(routes))  # fresh each run
+    no_hits = [Company(name="Stripe", ats="greenhouse", slug="stripe")]
+    monkeypatch.setattr("jobbot.cli.load_companies", lambda **kw: no_hits)
+    assert main(["verify-companies"]) == 0  # a warning, never a failure
+    assert "WARNING: no priority-1" in capsys.readouterr().out
+
+    with_hit = [Company(name="Stripe", ats="greenhouse", slug="stripe", priority=1)]
+    monkeypatch.setattr("jobbot.cli.load_companies", lambda **kw: with_hit)
+    main(["verify-companies"])
+    assert "WARNING" not in capsys.readouterr().out
+
+
 def test_cli_reports_config_errors(monkeypatch, capsys):
-    def bad():
+    def bad(**kw):
         raise ConfigError("companies.yaml: duplicate (ats, slug): greenhouse/x")
 
     monkeypatch.setattr("jobbot.cli.load_companies", bad)

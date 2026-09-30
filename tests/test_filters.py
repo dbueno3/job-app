@@ -14,9 +14,10 @@ from jobbot.filters import (
     yoe_ok,
 )
 from jobbot.models import Job
+from tests.conftest import FIXTURE_CONFIG
 
 NOW = datetime(2026, 9, 24, 12, tzinfo=UTC)
-CFG = load_filters()
+CFG = load_filters(FIXTURE_CONFIG / "filters.yaml")
 
 
 def make_job(**overrides) -> Job:

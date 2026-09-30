@@ -1,0 +1,11 @@
+# What I can claim, for must-have gap detection.
+# skills:       can claim; satisfies a requirement
+# learning:     counts toward score (via filters.yaml keywords) but never satisfies a must-have
+# cannot_claim: always flagged when required (also added to the languages we look for)
+skills: [Python, SQL, PostgreSQL, FastAPI, Docker, Linux]
+learning: [Go, Terraform, Kubernetes]
+cannot_claim: [Java, C++, C#, Scala]
+
+# "Must be a U.S. citizen" is a gap only when this is false.
+# Security clearance requirements always exclude the job, regardless.
+us_citizen: true

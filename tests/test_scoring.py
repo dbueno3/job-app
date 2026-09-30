@@ -5,9 +5,10 @@ import pytest
 from jobbot.config import load_filters
 from jobbot.models import Match
 from jobbot.scoring import Scorer, sort_matches
+from tests.conftest import FIXTURE_CONFIG
 from tests.test_filters import make_job
 
-CFG = load_filters()
+CFG = load_filters(FIXTURE_CONFIG / "filters.yaml")
 SCORER = Scorer(CFG.scoring)
 
 

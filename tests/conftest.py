@@ -5,6 +5,9 @@ import httpx
 import pytest
 
 FIXTURES = Path(__file__).parent / "fixtures"
+# Tests read these copies, never config/: my real config is a choice, and no valid
+# choice (like an empty hit list) may fail CI and stop the bot.
+FIXTURE_CONFIG = FIXTURES / "config"
 
 
 @pytest.fixture(autouse=True)

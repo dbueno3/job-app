@@ -8,15 +8,15 @@ from jobbot.sources import Listing
 from jobbot.sources.ashby import AshbySource
 from jobbot.sources.greenhouse import GreenhouseSource
 from jobbot.storage import Storage
-from tests.conftest import load_fixture
+from tests.conftest import FIXTURE_CONFIG, load_fixture
 from tests.test_filters import make_job
 
 STRIPE = Company(name="Stripe", ats="greenhouse", slug="stripe")
 RAMP = Company(name="Ramp", ats="ashby", slug="ramp")
 
 # Recency off, so these tests don't depend on the clock.
-CFG = load_filters().model_copy(update={"max_age_days": 100_000})
-PROFILE = load_profile()
+CFG = load_filters(FIXTURE_CONFIG / "filters.yaml").model_copy(update={"max_age_days": 100_000})
+PROFILE = load_profile(FIXTURE_CONFIG / "profile.yaml")
 
 DETAIL_2YOE = {
     "content": "&lt;p&gt;2+ years of experience with Python and PostgreSQL.&lt;/p&gt;",

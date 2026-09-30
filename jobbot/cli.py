@@ -209,6 +209,12 @@ def cmd_verify_companies(args: argparse.Namespace) -> int:
     print(f"OK ({len(ok)}):")
     for c in sorted(ok, key=lambda c: -result.counts[c.name]):
         print(f"  {label(c)}: {result.counts[c.name]} jobs")
+    if not any(c.priority == 1 for c in companies):
+        # Valid config, so a warning, never a failure: everything just waits for the digest.
+        print(
+            "\nWARNING: no priority-1 (hit list) companies are enabled, so no immediate "
+            "alerts will be sent. Add `priority: 1` to companies in config/companies.yaml."
+        )
     return 1 if errors else 0
 
 
