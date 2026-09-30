@@ -100,6 +100,8 @@ def test_pipeline_on_fixtures():
     assert result.matches == sort_matches(result.matches)
     by_title = {m.job.title: m for m in result.matches}
     assert by_title["Software Engineer - Infrastructure"].min_yoe == 2
+    # Keywords are recorded per match, for echoing in the resume.
+    assert "Terraform" in by_title["Software Engineer - Infrastructure"].keywords
 
 
 def test_pipeline_drops_old_jobs():

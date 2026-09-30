@@ -1,7 +1,8 @@
 import re
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
-from jobbot.config import FilterConfig, LocationConfig
+from jobbot.config import FilterConfig, LocationConfig, Profile
 from jobbot.models import Job
 
 # --- term matching ------------------------------------------------------------
@@ -102,7 +103,11 @@ _EXPERIENCE_CONTEXT = re.compile(
     r"require[sd]?)\b",
     re.IGNORECASE,
 )
-_SENTENCE_BREAK = re.compile(r"[.!?;](?=\s)|\n|•|·")
+# Sentence ends: . ! ? ; followed by whitespace, a newline, or a bullet. Not after a
+# single letter ("U.S. citizen") or e.g. / i.e. / etc., which would split a sentence.
+_SENTENCE_BREAK = re.compile(
+    r"(?<!\b[A-Za-z])(?<!\be\.g)(?<!\bi\.e)(?<!\betc)[.!?;](?=\s)|\n|•|·", re.IGNORECASE
+)
 MAX_PLAUSIBLE_YOE = 15
 
 
@@ -146,6 +151,139 @@ def yoe_ok(min_yoe: float | None, max_yoe: float, floor: float = 0) -> bool:
     return min_yoe is None or floor <= min_yoe <= max_yoe
 
 
+# --- must-have gaps ---------------------------------------------------------------
+
+# Languages we look for in requirements. cannot_claim entries are added at runtime.
+LANGUAGE_PATTERNS = {
+    "Python": r"\bpython\b",
+    "Go": r"(?-i:\b(?:Go|GO)\b)(?!-to|\s+to\s+market)|\bgolang\b",
+    "Java": r"\bjava\b(?![\s-]?script)",
+    "JavaScript": r"\bjavascript\b",
+    "TypeScript": r"\btypescript\b",
+    "C++": r"(?<!\w)c\+\+",
+    "C#": r"(?<!\w)c#",
+    "Scala": r"\bscala\b",
+    "Kotlin": r"\bkotlin\b",
+    "Rust": r"\brust\b",
+    "Ruby": r"\bruby\b",
+    "Swift": r"(?-i:\bSwift\b)",
+    "Elixir": r"\belixir\b",
+    "Haskell": r"\bhaskell\b",
+    "Clojure": r"\bclojure\b",
+    "PHP": r"\bphp\b",
+    "OCaml": r"\bocaml\b",
+    "Erlang": r"\berlang\b",
+}
+
+# A sentence states a requirement only if it has one of these...
+_REQUIREMENT = re.compile(
+    r"\b(?:experienced?|proficien\w*|expert\w*|fluen\w*|strong|required|requires?|must|"
+    r"knowledge\s+of|background\s+in|programming|skilled)\b",
+    re.IGNORECASE,
+)
+# ...and none of these (nice-to-haves never create a gap).
+_SOFT = re.compile(
+    r"\b(?:preferred|preferabl\w*|a\s+plus|bonus|ideal(?:ly)?|nice[- ]to[- ]have|desired|desirable|"
+    r"advantage|not\s+required|helpful|strong\s+signal|interest\s+in|willing\s+to\s+learn|"
+    r"excitement\s+to\s+learn|open\s+to|(?:don.?t|do\s+not|not)\s+expect)\b",
+    re.IGNORECASE,
+)
+# "Go, Python, or Java" / "such as" / "at least one of": any one known language satisfies it.
+_ALTERNATIVES = re.compile(
+    r"\b(?:or|such\s+as|e\.g|eg|like|one\s+of|at\s+least\s+one|one\s+or\s+more|any|similar|"
+    r"equivalent|etc)\b|\blanguages?\s*[(:]",
+    re.IGNORECASE,
+)
+# Other spellings of skills, so "Postgres" satisfies a PostgreSQL skill.
+SKILL_ALIASES = {"postgresql": ["postgres"], "go": ["golang"]}
+_CLEARANCE = re.compile(
+    r"\b(?:security|government|federal|dod|secret|active)\s+(?:security\s+)?clearance\b|"
+    r"\bts\s*/\s*sci\b|\btop[- ]secret\b|\bclearance\s+(?:is\s+)?required\b",
+    re.IGNORECASE,
+)
+_CLEARANCE_NEGATED = re.compile(
+    r"\bno\s+(?:\w+\s+)?clearance|\bclearance\s+(?:is\s+)?not\s+required|"
+    r"\bwithout\s+(?:an?\s+)?(?:\w+\s+)?clearance",
+    re.IGNORECASE,
+)
+_US_CITIZEN = re.compile(r"\b(?:u\.?\s?s\.?|united\s+states)\s+citizen(?:ship|s)?\b", re.IGNORECASE)
+_MANDATORY = re.compile(r"\b(?:must|required?|requires|only|mandatory)\b", re.IGNORECASE)
+
+
+def _sentences(text: str) -> list[str]:
+    return [s.strip() for s in _SENTENCE_BREAK.split(text) if s.strip()]
+
+
+@dataclass
+class GapReport:
+    clearance: bool = False
+    gaps: list[str] = field(default_factory=list)
+
+
+class GapDetector:
+    """Finds must-have requirements the profile can't meet.
+
+    Clearance -> the job is excluded. Everything else is a gap: kept, but shown.
+    Only requirement sentences count; stack descriptions ("we use Go") and
+    nice-to-haves ("Rust is a plus") never create gaps.
+    """
+
+    def __init__(self, profile: Profile) -> None:
+        self.profile = profile
+        self.skills = {s.lower() for s in profile.skills}
+        self.learning = {s.lower() for s in profile.learning}
+        skill_terms = [t for s in self.skills for t in [s, *SKILL_ALIASES.get(s, [])]]
+        self.skill_terms = compile_terms(skill_terms) if skill_terms else None
+        patterns = dict(LANGUAGE_PATTERNS)
+        for name in profile.cannot_claim:
+            if name not in patterns:
+                patterns[name] = rf"(?<!\w){re.escape(name)}(?!\w)"
+        self.languages = {n: re.compile(p, re.IGNORECASE) for n, p in patterns.items()}
+
+    def _label(self, lang: str) -> str:
+        return f"{lang} (learning)" if lang.lower() in self.learning else lang
+
+    def detect(self, text: str) -> GapReport:
+        report = GapReport()
+        for sentence in _sentences(text):
+            if (
+                _CLEARANCE.search(sentence)
+                and not _SOFT.search(sentence)
+                and not _CLEARANCE_NEGATED.search(sentence)
+            ):
+                report.clearance = True
+            if (
+                not self.profile.us_citizen
+                and _US_CITIZEN.search(sentence)
+                and _MANDATORY.search(sentence)
+                and not _SOFT.search(sentence)
+            ):
+                report.gaps.append("US citizenship")
+            report.gaps.extend(self._language_gaps(sentence))
+        report.gaps = list(dict.fromkeys(report.gaps))  # dedupe, keep order
+        return report
+
+    def _language_gaps(self, sentence: str) -> list[str]:
+        if not _REQUIREMENT.search(sentence) or _SOFT.search(sentence):
+            return []
+        mentioned = [n for n, p in self.languages.items() if p.search(sentence)]
+        if not mentioned:
+            return []
+        missing = [n for n in mentioned if n.lower() not in self.skills]
+        if not missing:
+            return []
+        if _ALTERNATIVES.search(sentence):
+            # "Go, Python, or Java" / "any of React, TypeScript, Postgres": one option I can
+            # claim (language or other skill) is enough.
+            if len(missing) < len(mentioned) or (
+                self.skill_terms and self.skill_terms.search(sentence)
+            ):
+                return []
+            if len(missing) > 1:
+                return ["one of " + " / ".join(self._label(n) for n in missing)]
+        return [self._label(n) for n in missing]
+
+
 # --- dedupe -------------------------------------------------------------------
 
 
@@ -178,31 +316,42 @@ def _newer(a: Job, b: Job) -> bool:
 # --- all together -------------------------------------------------------------
 
 
-class JobFilter:
-    """Compiled filters. evaluate() returns the first failing reason, or None if kept."""
+@dataclass
+class Evaluation:
+    reason: str | None  # why the job was dropped; None if kept
+    min_yoe: float | None = None
+    gaps: list[str] = field(default_factory=list)
 
-    def __init__(self, cfg: FilterConfig) -> None:
+
+class JobFilter:
+    """Compiled filters. evaluate() returns why a job was dropped (or None) plus details."""
+
+    def __init__(self, cfg: FilterConfig, profile: Profile | None = None) -> None:
         self.cfg = cfg
         self.exclude = compile_terms(cfg.title_exclude)
         self.include = compile_terms(cfg.title_include)
         self.require = compile_terms(cfg.title_require)
         self.location = LocationMatcher(cfg.locations)
         self.new_grad = [re.compile(p, re.IGNORECASE) for p in cfg.new_grad_patterns]
+        self.gaps = GapDetector(profile or Profile())
 
     def is_new_grad(self, job: Job) -> bool:
         return any(p.search(job.description_text) for p in self.new_grad)
 
-    def evaluate(self, job: Job, now: datetime) -> tuple[str | None, float | None]:
-        """(drop_reason or None, parsed min YOE). Cheap checks run before the regex-heavy one."""
+    def evaluate(self, job: Job, now: datetime) -> Evaluation:
+        """Cheap checks (date, title, location) run before the regex-heavy description ones."""
         if not is_recent(job, now, self.cfg.max_age_days, self.cfg.keep_undated):
-            return "too old", None
+            return Evaluation("too old")
         if not title_ok(job.title, self.exclude, self.include, self.require):
-            return "title", None
+            return Evaluation("title")
         if not self.location.ok(job):
-            return "location", None
+            return Evaluation("location")
         if self.is_new_grad(job):
-            return "new grad", None
+            return Evaluation("new grad")
         min_yoe = parse_min_yoe(job.description_text)
         if not yoe_ok(min_yoe, self.cfg.max_yoe, self.cfg.min_yoe):
-            return "yoe", min_yoe
-        return None, min_yoe
+            return Evaluation("yoe", min_yoe)
+        report = self.gaps.detect(job.description_text)
+        if report.clearance:
+            return Evaluation("clearance", min_yoe)
+        return Evaluation(None, min_yoe, report.gaps)

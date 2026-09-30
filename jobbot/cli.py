@@ -3,7 +3,7 @@ import logging
 from collections.abc import Callable
 from pathlib import Path
 
-from jobbot.config import ConfigError, load_companies, load_filters
+from jobbot.config import ConfigError, load_companies, load_filters, load_profile
 from jobbot.digest import DigestConfigError, SmtpConfig, build_digest, send_digest
 from jobbot.models import Match
 from jobbot.pipeline import select_matches
@@ -74,7 +74,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         fetched = fetch_all(companies, client)
     for name, reason in fetched.failures.items():
         print(f"FAILED {name}: {reason}")
-    selected = select_matches(fetched.jobs, cfg)
+    selected = select_matches(fetched.jobs, cfg, profile=load_profile())
 
     def notify(new: list[StoredJob]) -> None:
         digest = build_digest(new)

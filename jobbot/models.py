@@ -52,3 +52,4 @@ class Match(BaseModel):
     score: int
     min_yoe: float | None  # lowest stated YOE requirement; None if none found
     keywords: list[str]
+    gaps: list[str] = []  # must-haves I can't claim, e.g. "Java", "one of C++ / Rust"

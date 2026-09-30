@@ -38,6 +38,20 @@ class FilterConfig(BaseModel):
     scoring: ScoringConfig
 
 
+class Profile(BaseModel):
+    skills: list[str] = []
+    learning: list[str] = []
+    cannot_claim: list[str] = []
+    us_citizen: bool = False
+
+
+def load_profile(path: Path = CONFIG_DIR / "profile.yaml") -> Profile:
+    try:
+        return Profile(**(yaml.safe_load(path.read_text()) or {}))
+    except ValidationError as exc:
+        raise ConfigError(f"{path.name}: {exc}") from exc
+
+
 def load_companies(
     path: Path = CONFIG_DIR / "companies.yaml", include_disabled: bool = False
 ) -> list[Company]:

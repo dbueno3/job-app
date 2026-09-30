@@ -2,8 +2,9 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from jobbot.config import load_filters
+from jobbot.config import Profile, load_filters
 from jobbot.filters import (
+    GapDetector,
     JobFilter,
     LocationMatcher,
     compile_terms,
@@ -80,6 +81,14 @@ def test_parse_min_yoe_forms(text, expected):
 def test_parse_min_yoe_takes_lowest_minimum():
     text = "5+ years of experience in backend.\nOr 3+ years of experience with a master's degree."
     assert parse_min_yoe(text) == 3
+
+
+def test_parse_min_yoe_masking_case_is_lenient_by_design():
+    # Known tradeoff (CLAUDE.md): the lowest stated minimum wins, so a narrow
+    # "1+ year with Kafka" masks the real "5+ years" bar. Deliberate: over-including
+    # beats missing roles. Don't change without asking.
+    text = "- 5+ years of software engineering experience\n- 1+ year of experience with Kafka"
+    assert parse_min_yoe(text) == 1
 
 
 def test_parse_min_yoe_lowest_across_ranges_and_plus():
@@ -222,6 +231,25 @@ def test_title_kept(title):
 )
 def test_title_dropped(title):
     assert not title_ok(title, EXCLUDE, INCLUDE, REQUIRE)
+
+
+@pytest.mark.parametrize(
+    "title",
+    ["Associate Product Manager", "Platform Partnerships Lead", "Platform Partnerships"],
+)
+def test_generic_terms_need_an_engineering_word(title):
+    assert not title_ok(title, EXCLUDE, INCLUDE, REQUIRE)
+
+
+@pytest.mark.parametrize("title", ["International Payments Engineer", "Internal Tools Engineer"])
+def test_intern_does_not_match_international_or_internal(title):
+    assert not EXCLUDE.search(title)
+
+
+def test_engineer_i_does_not_match_engineer_in_test():
+    include = compile_terms(["engineer i"])
+    assert not include.search("QA Engineer in Test")
+    assert include.search("QA Engineer I")
 
 
 def test_engineer_i_does_not_match_inside_engineer_iii():
@@ -383,14 +411,125 @@ def test_evaluate_drops_new_grad_with_normal_title():
         description_text="Recent graduates (including Summer 2026) or professionals with up to "
         "18 months of experience.",
     )
-    assert JOB_FILTER.evaluate(job, NOW)[0] == "new grad"
+    assert JOB_FILTER.evaluate(job, NOW).reason == "new grad"
 
 
 def test_evaluate_drops_below_min_yoe():
     job = make_job(description_text="0-2 years of software engineering experience")
-    assert JOB_FILTER.evaluate(job, NOW) == ("yoe", 0)
+    ev = JOB_FILTER.evaluate(job, NOW)
+    assert (ev.reason, ev.min_yoe) == ("yoe", 0)
 
 
 def test_evaluate_keeps_one_year():
     job = make_job(description_text="1+ years of software engineering experience")
-    assert JOB_FILTER.evaluate(job, NOW) == (None, 1)
+    ev = JOB_FILTER.evaluate(job, NOW)
+    assert (ev.reason, ev.min_yoe) == (None, 1)
+
+
+# --- must-have gaps ---------------------------------------------------------------
+
+PROFILE = Profile(
+    skills=["Python", "SQL", "PostgreSQL", "FastAPI", "Docker", "Linux"],
+    learning=["Go", "Terraform", "Kubernetes"],
+    cannot_claim=["Java", "C++", "C#", "Scala"],
+    us_citizen=True,
+)
+GAPS = GapDetector(PROFILE)
+
+
+@pytest.mark.parametrize(
+    "text, gaps",
+    [
+        # hard requirements for languages I can't claim
+        ("6+ years of experience developing backend systems with Java and Spring", ["Java"]),
+        ("Experience with Kotlin", ["Kotlin"]),
+        ("Strong proficiency in C# and .NET", ["C#"]),
+        # alternatives: one option I can claim is enough
+        ("Experience with Go, Python, or Java", []),
+        ("Proficient in at least one of Java, Go, Python, or TypeScript", []),
+        ("Experience working with backend programming languages (Java, Kotlin, Python)", []),
+        ("Experience with any part of our stack: React, TypeScript, Node.js, Postgres", []),
+        # alternatives with no option I can claim
+        ("Experience with C++ or Rust", ["one of C++ / Rust"]),
+        (
+            "Strong proficiency with Java, Kotlin, or other object-oriented languages",
+            ["one of Java / Kotlin"],
+        ),
+        ("4+ years experience with a language such as Java or GO", ["one of Go (learning) / Java"]),
+        # learning never satisfies a must-have
+        ("5+ years of experience, with proficiency in Go", ["Go (learning)"]),
+        # skills satisfy
+        ("Strong experience with Python and PostgreSQL", []),
+        # nice-to-haves and softened phrasing never create gaps
+        ("Experience with Rust is a plus", []),
+        ("Experience in latest versions of C++ highly desirable", []),
+        ("Knowledge of or excitement to learn Haskell, and proficiency in SQL", []),
+        ("(we don't expect experience in OCaml in particular.)", []),
+        ("Familiarity with Go is helpful", []),
+        # stack descriptions aren't requirements
+        ("Some of the technologies we use include Go, PostgreSQL, Docker, Kafka", []),
+        ("You'll own full-stack feature delivery across Golang and React", []),
+        ("We work mostly in Java, Ruby, JavaScript, Scala, and Go.", []),
+        # JavaScript is not Java
+        ("Proficiency in JavaScript", ["JavaScript"]),
+    ],
+)
+def test_language_gaps(text, gaps):
+    assert GAPS.detect(text).gaps == gaps
+
+
+def test_gaps_deduped_across_sentences():
+    text = "Experience with Kotlin.\n- Strong Kotlin skills required."
+    assert GAPS.detect(text).gaps == ["Kotlin"]
+
+
+def test_cannot_claim_entries_are_detected_even_if_not_in_catalog():
+    gaps = GapDetector(Profile(cannot_claim=["COBOL"]))
+    assert gaps.detect("Must have experience with COBOL").gaps == ["COBOL"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Must hold an active security clearance",
+        "TS/SCI clearance required",
+        "Active Top Secret clearance with polygraph",
+        "You currently hold a security clearance, or are eligible and willing to obtain one",
+        "Clearance is required for this role",
+    ],
+)
+def test_clearance_detected(text):
+    assert GAPS.detect(text).clearance
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "TS/SCI clearance (preferred but not required).",
+        "An active U.S. government security clearance is preferred",
+        "Music Platform Clearances & Curation: contribute to weekly music clearances",
+        "No security clearance required.",
+    ],
+)
+def test_clearance_not_detected(text):
+    assert not GAPS.detect(text).clearance
+
+
+def test_citizenship_is_a_gap_only_for_non_citizens():
+    text = "Must be a U.S. citizen due to government contract requirements."
+    assert GAPS.detect(text).gaps == []  # profile: us_citizen true
+    assert GapDetector(Profile(us_citizen=False)).detect(text).gaps == ["US citizenship"]
+
+
+def test_eeo_boilerplate_is_not_a_citizenship_requirement():
+    text = "We do not discriminate on the basis of race, national origin, citizenship, or age."
+    assert GapDetector(Profile(us_citizen=False)).detect(text).gaps == []
+
+
+def test_evaluate_excludes_clearance_and_records_gaps():
+    job_filter = JobFilter(CFG, PROFILE)
+    cleared = make_job(description_text="Must hold an active security clearance.")
+    assert job_filter.evaluate(cleared, NOW).reason == "clearance"
+    java = make_job(description_text="2+ years of experience with Java.")
+    ev = job_filter.evaluate(java, NOW)
+    assert (ev.reason, ev.min_yoe, ev.gaps) == (None, 2, ["Java"])
