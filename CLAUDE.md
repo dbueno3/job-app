@@ -74,9 +74,15 @@ Unique key: `(source, source_job_id)`.
 ## Sources — phase 1
 Each adapter takes a board slug and returns `list[Job]`. A failing company logs a warning
 and is skipped; one bad board must never crash the run.
-- Greenhouse: `https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true`
-- Ashby: `https://api.ashbyhq.com/posting-api/job-board/{slug}` (check whether
-  `includeCompensation=true` works; if so, populate `compensation`)
+- Greenhouse: list `https://boards-api.greenhouse.io/v1/boards/{slug}/jobs` (no
+  `content=true`; ~25x smaller), filter on title + location, then fetch descriptions
+  only for jobs that pass and aren't in the DB, via
+  `https://boards-api.greenhouse.io/v1/boards/{slug}/jobs/{id}?pay_transparency=true`
+  (`pay_input_ranges` populates `compensation` when present).
+- Ashby: `https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true`.
+  No lighter list option exists (tested includeDescription/fields/limit params: all
+  ignored) and there is no public per-job endpoint (401), so boards are fetched whole
+  (~0.3 MB gzipped each).
 - Lever: `https://api.lever.co/v0/postings/{slug}?mode=json`
 
 `posted_at`: verify which field each API exposes and whether it is a true first-published
@@ -131,9 +137,12 @@ Record which keywords matched. They go in the digest as terms to echo in my resu
 Table `jobs`: model fields + `matched` (bool), `score`, `matched_keywords`, `gaps`,
 `is_repost`, `repost_of`, `status` (new | applied | reached_out | interviewing |
 rejected | skipped), `notes`, `digested_at` (nullable), `updated_at`.
-- Store every fetched job, not only matches, so filter changes can be re-applied to
-  history (`jobbot run --refilter`). Descriptions are stored compressed. Descriptions
-  of unmatched jobs older than 14 days are pruned.
+- Store metadata for every fetched job, descriptions only for jobs that passed
+  title + location, so filter changes can be re-applied to history
+  (`jobbot run --refilter`). If a loosened title/location filter makes old jobs
+  eligible, `--refilter` fetches their missing descriptions on demand.
+  Descriptions are stored compressed. Descriptions of unmatched jobs older than
+  14 days are pruned.
 - The DB lives on an orphan `data` branch as a single force-pushed commit, not on
   master (storing every job would grow the repo by ~15 MB per commit). Both the bot
   and `jobbot sync` push with `--force-with-lease`; on rejection they fetch the latest
