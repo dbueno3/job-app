@@ -136,10 +136,11 @@ class Storage:
         self.conn.execute("PRAGMA foreign_keys = ON")
         self._migrate()
 
+
     def __enter__(self) -> "Storage":
         return self
 
-    def __exit__(self, *exc) -> None:
+    def __exit__(self, *_exc) -> None:
         self.close()
 
     def close(self) -> None:
@@ -263,7 +264,10 @@ class Storage:
                 _iso(now),
             ),
         )  # fmt: skip
-        return cur.lastrowid
+        job_id = cur.lastrowid
+        if job_id is None:  # can't happen after a successful INSERT; narrows int | None
+            raise sqlite3.DatabaseError("INSERT did not return a row id")
+        return job_id
 
     def update_evaluation(
         self, job_id: int, match: Match | None, drop_reason: str | None, now: datetime | None = None
